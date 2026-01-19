@@ -1,0 +1,64 @@
+{
+  "version": "1.0.0",
+
+  "config": {
+    "seats": 8,
+    "stack": 50.0,
+    "sb": 0.5,
+    "bb": 1.0
+  },
+
+  "positions": ["UTG", "UTG1", "LJ", "HJ", "CO", "BTN", "SB", "BB"],
+
+  "sizing": {
+    "rfi": {
+      "UTG": 2.3, "UTG1": 2.3, "LJ": 2.3, "HJ": 2.3, "CO": 2.3, "BTN": 2.3, "SB": 3.5
+    },
+    "3bet": {
+      "ip": 6.9,
+      "oop": { "SB": 9.2, "BB": 9.8 }
+    },
+    "4bet": {
+      "ip": 15.0,
+      "oop": 16.0
+    },
+    "squeeze": {
+      "base": 6.9,
+      "per_caller": 1.2,
+      "oop_extra": 1.2
+    },
+    "sb_vs_bb": {
+      "sb_limp": 0.5,
+      "sb_open": 3.5,
+      "bb_raise_vs_limp": [3.5, 6.0],
+      "bb_3bet": 9.0,
+      "sb_4bet": 16.0
+    }
+  },
+
+  "rules": {
+    "cold_call": false,
+    "flat_call": true,
+    "allin_from": "4bet"
+  },
+
+  "actions": {
+    "first_in": ["fold", "raise"],
+    "facing_rfi": ["fold", "call", "raise"],
+    "facing_3bet_aggressor": ["fold", "call", "raise", "allin"],
+    "facing_3bet_third_party": ["fold", "raise", "allin"],
+    "facing_4bet": ["fold", "call", "allin"],
+    "facing_allin": ["fold", "call"]
+  },
+
+  "tree_generation": {
+    "method": "rule_based",
+    "start": "UTG",
+    "end_conditions": [
+      "all_fold_to_one",
+      "action_closes_after_call",
+      "allin_called"
+    ],
+    "position_order": "preflop"
+  }
+}
