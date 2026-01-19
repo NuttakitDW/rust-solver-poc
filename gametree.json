@@ -28,9 +28,13 @@
       "oop_extra": 1.2
     },
     "sb_vs_bb": {
-      "sb_limp": 0.5,
+      "sb_limp": 1.0,
       "sb_open": 3.5,
       "bb_raise_vs_limp": [3.5, 6.0],
+      "sb_vs_bb_raise_after_limp": {
+        "vs_3.5": { "3bet": [10.0, 15.0], "allin": 50.0 },
+        "vs_6": { "3bet": [14.0], "allin": 50.0 }
+      },
       "bb_3bet": 9.0,
       "sb_4bet": 17.0
     }
