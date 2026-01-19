@@ -1,7 +1,8 @@
 # rust-solver-poc
 
 ## Project Overview
-<!-- Brief description of what this solver does -->
+Stage: 0
+Setup POC for CFR solver to create preflop range for 50bb stack.
 
 ## Tech Stack
 - **Language**: Rust
@@ -43,4 +44,6 @@ cargo clippy
 <!-- How to run tests, test coverage requirements -->
 
 ## Notes
-<!-- Any important notes, gotchas, or context for development -->
+- use solver.md as refferrence when implement a solver.
+- cold call is when players call 3bet without involve with previous action for example UTG raise UTG1 3bet and LJ call we call LJ call = "Cold Call".
+- flat call flat call is action that call to match raise from RFI.
