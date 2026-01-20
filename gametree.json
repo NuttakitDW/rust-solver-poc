@@ -1,68 +1,1327 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "format": "state_machine",
 
   "config": {
     "seats": 8,
     "stack": 50.0,
     "sb": 0.5,
-    "bb": 1.0
+    "bb": 1.0,
+    "positions": ["UTG", "UTG1", "LJ", "HJ", "CO", "BTN", "SB", "BB"]
   },
 
-  "positions": ["UTG", "UTG1", "LJ", "HJ", "CO", "BTN", "SB", "BB"],
+  "entry": "utg_open",
 
-  "sizing": {
-    "rfi": {
-      "UTG": 2.3, "UTG1": 2.3, "LJ": 2.3, "HJ": 2.3, "CO": 2.3, "BTN": 2.3, "SB": 3.5
-    },
-    "3bet": {
-      "ip": 6.9,
-      "oop": { "SB": 9.2, "BB": 9.8 }
-    },
-    "4bet": {
-      "ip": 15.0,
-      "oop": 16.0
-    },
-    "squeeze": {
-      "base": 6.9,
-      "per_caller": 1.2,
-      "oop_extra": 1.2
-    },
-    "sb_vs_bb": {
-      "sb_limp": 1.0,
-      "sb_open": 3.5,
-      "bb_raise_vs_limp": [3.5, 6.0],
-      "sb_vs_bb_raise_after_limp": {
-        "vs_3.5": { "3bet": [10.0, 15.0], "allin": 50.0 },
-        "vs_6": { "3bet": [14.0], "allin": 50.0 }
-      },
-      "bb_3bet": 9.0,
-      "sb_4bet": 17.0
-    }
-  },
+  "nodes": {
 
-  "rules": {
-    "cold_call": false,
-    "flat_call": true,
-    "allin_from": "4bet"
-  },
+    "utg_open": {
+      "player": "UTG",
+      "actions": {
+        "fold": { "next": "utg1_open" },
+        "raise": { "size": 2.3, "next": "utg1_vs_utg" }
+      }
+    },
 
-  "actions": {
-    "first_in": ["fold", "raise"],
-    "facing_rfi": ["fold", "call", "raise"],
-    "facing_3bet_aggressor": ["fold", "call", "raise", "allin"],
-    "facing_3bet_third_party": ["fold", "raise", "allin"],
-    "facing_4bet": ["fold", "call", "allin"],
-    "facing_allin": ["fold", "call"]
-  },
+    "utg1_open": {
+      "player": "UTG1",
+      "actions": {
+        "fold": { "next": "lj_open" },
+        "raise": { "size": 2.3, "next": "lj_vs_utg1" }
+      }
+    },
 
-  "tree_generation": {
-    "method": "rule_based",
-    "start": "UTG",
-    "end_conditions": [
-      "all_fold_to_one",
-      "action_closes_after_call",
-      "allin_called"
-    ],
-    "position_order": "preflop"
+    "lj_open": {
+      "player": "LJ",
+      "actions": {
+        "fold": { "next": "hj_open" },
+        "raise": { "size": 2.3, "next": "hj_vs_lj" }
+      }
+    },
+
+    "hj_open": {
+      "player": "HJ",
+      "actions": {
+        "fold": { "next": "co_open" },
+        "raise": { "size": 2.3, "next": "co_vs_hj" }
+      }
+    },
+
+    "co_open": {
+      "player": "CO",
+      "actions": {
+        "fold": { "next": "btn_open" },
+        "raise": { "size": 2.3, "next": "btn_vs_co" }
+      }
+    },
+
+    "btn_open": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "sb_first" },
+        "raise": { "size": 2.3, "next": "sb_vs_btn" }
+      }
+    },
+
+
+    "utg1_vs_utg": {
+      "player": "UTG1",
+      "actions": {
+        "fold": { "next": "lj_vs_utg" },
+        "call": { "size": 2.3, "next": "lj_vs_utg_utg1_flat" },
+        "raise": { "size": 6.9, "next": "lj_vs_utg1_3bet" }
+      }
+    },
+
+    "lj_vs_utg": {
+      "player": "LJ",
+      "actions": {
+        "fold": { "next": "hj_vs_utg" },
+        "call": { "size": 2.3, "next": "hj_vs_utg_lj_flat" },
+        "raise": { "size": 6.9, "next": "hj_vs_lj_3bet_utg" }
+      }
+    },
+
+    "hj_vs_utg": {
+      "player": "HJ",
+      "actions": {
+        "fold": { "next": "co_vs_utg" },
+        "call": { "size": 2.3, "next": "co_vs_utg_hj_flat" },
+        "raise": { "size": 6.9, "next": "co_vs_hj_3bet_utg" }
+      }
+    },
+
+    "co_vs_utg": {
+      "player": "CO",
+      "actions": {
+        "fold": { "next": "btn_vs_utg" },
+        "call": { "size": 2.3, "next": "btn_vs_utg_co_flat" },
+        "raise": { "size": 6.9, "next": "btn_vs_co_3bet_utg" }
+      }
+    },
+
+    "btn_vs_utg": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "sb_vs_utg" },
+        "call": { "size": 2.3, "next": "sb_vs_utg_btn_flat" },
+        "raise": { "size": 6.9, "next": "sb_vs_btn_3bet_utg" }
+      }
+    },
+
+    "sb_vs_utg": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "bb_vs_utg" },
+        "call": { "size": 2.3, "next": "bb_vs_utg_sb_flat" },
+        "raise": { "size": 9.2, "next": "bb_vs_sb_3bet_utg" }
+      }
+    },
+
+    "bb_vs_utg": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "utg_wins" },
+        "call": { "size": 2.3, "next": "terminal", "result": "flop", "pot": 5.3 },
+        "raise": { "size": 9.8, "next": "utg_vs_bb_3bet" }
+      }
+    },
+
+    "utg_vs_bb_3bet": {
+      "player": "UTG",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 9.8, "next": "terminal", "result": "flop", "pot": 21.4 },
+        "allin": { "size": 50.0, "next": "bb_facing_utg_allin" }
+      }
+    },
+
+    "bb_vs_utg_4bet": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "utg_wins" },
+        "call": { "size": 16.0, "next": "terminal", "result": "flop", "pot": 34.0 },
+        "allin": { "size": 50.0, "next": "utg_facing_bb_5bet" }
+      }
+    },
+
+    "utg_facing_bb_5bet": {
+      "player": "UTG",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_utg_allin": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "utg_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+
+    "lj_vs_utg1": {
+      "player": "LJ",
+      "actions": {
+        "fold": { "next": "hj_vs_utg1" },
+        "call": { "size": 2.3, "next": "hj_vs_utg1_lj_flat" },
+        "raise": { "size": 6.9, "next": "hj_vs_lj_3bet_utg1" }
+      }
+    },
+
+    "hj_vs_utg1": {
+      "player": "HJ",
+      "actions": {
+        "fold": { "next": "co_vs_utg1" },
+        "call": { "size": 2.3, "next": "co_vs_utg1_hj_flat" },
+        "raise": { "size": 6.9, "next": "co_vs_hj_3bet_utg1" }
+      }
+    },
+
+    "co_vs_utg1": {
+      "player": "CO",
+      "actions": {
+        "fold": { "next": "btn_vs_utg1" },
+        "call": { "size": 2.3, "next": "btn_vs_utg1_co_flat" },
+        "raise": { "size": 6.9, "next": "btn_vs_co_3bet_utg1" }
+      }
+    },
+
+    "btn_vs_utg1": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "sb_vs_utg1" },
+        "call": { "size": 2.3, "next": "sb_vs_utg1_btn_flat" },
+        "raise": { "size": 6.9, "next": "sb_vs_btn_3bet_utg1" }
+      }
+    },
+
+    "sb_vs_utg1": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "bb_vs_utg1" },
+        "call": { "size": 2.3, "next": "bb_vs_utg1_sb_flat" },
+        "raise": { "size": 9.2, "next": "bb_vs_sb_3bet_utg1" }
+      }
+    },
+
+    "bb_vs_utg1": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "utg1_wins" },
+        "call": { "size": 2.3, "next": "terminal", "result": "flop", "pot": 5.3 },
+        "raise": { "size": 9.8, "next": "utg1_vs_bb_3bet" }
+      }
+    },
+
+    "utg1_vs_bb_3bet": {
+      "player": "UTG1",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 9.8, "next": "terminal", "result": "flop", "pot": 21.4 },
+        "raise": { "size": 16.0, "next": "bb_vs_utg1_4bet" },
+        "allin": { "size": 50.0, "next": "bb_facing_utg1_allin" }
+      }
+    },
+
+    "bb_vs_utg1_4bet": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "utg1_wins" },
+        "call": { "size": 16.0, "next": "terminal", "result": "flop", "pot": 34.0 },
+        "allin": { "size": 50.0, "next": "utg1_facing_bb_5bet" }
+      }
+    },
+
+    "utg1_facing_bb_5bet": {
+      "player": "UTG1",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_utg1_allin": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "utg1_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+
+    "hj_vs_lj": {
+      "player": "HJ",
+      "actions": {
+        "fold": { "next": "co_vs_lj" },
+        "call": { "size": 2.3, "next": "co_vs_lj_hj_flat" },
+        "raise": { "size": 6.9, "next": "co_vs_hj_3bet_lj" }
+      }
+    },
+
+    "co_vs_lj": {
+      "player": "CO",
+      "actions": {
+        "fold": { "next": "btn_vs_lj" },
+        "call": { "size": 2.3, "next": "btn_vs_lj_co_flat" },
+        "raise": { "size": 6.9, "next": "btn_vs_co_3bet_lj" }
+      }
+    },
+
+    "btn_vs_lj": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "sb_vs_lj" },
+        "call": { "size": 2.3, "next": "sb_vs_lj_btn_flat" },
+        "raise": { "size": 6.9, "next": "sb_vs_btn_3bet_lj" }
+      }
+    },
+
+    "sb_vs_lj": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "bb_vs_lj" },
+        "call": { "size": 2.3, "next": "bb_vs_lj_sb_flat" },
+        "raise": { "size": 9.2, "next": "bb_vs_sb_3bet_lj" }
+      }
+    },
+
+    "bb_vs_lj": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "lj_wins" },
+        "call": { "size": 2.3, "next": "terminal", "result": "flop", "pot": 5.3 },
+        "raise": { "size": 9.8, "next": "lj_vs_bb_3bet" }
+      }
+    },
+
+    "lj_vs_bb_3bet": {
+      "player": "LJ",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 9.8, "next": "terminal", "result": "flop", "pot": 21.4 },
+        "raise": { "size": 16.0, "next": "bb_vs_lj_4bet" },
+        "allin": { "size": 50.0, "next": "bb_facing_lj_allin" }
+      }
+    },
+
+    "bb_vs_lj_4bet": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "lj_wins" },
+        "call": { "size": 16.0, "next": "terminal", "result": "flop", "pot": 34.0 },
+        "allin": { "size": 50.0, "next": "lj_facing_bb_5bet" }
+      }
+    },
+
+    "lj_facing_bb_5bet": {
+      "player": "LJ",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_lj_allin": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "lj_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+
+    "co_vs_hj": {
+      "player": "CO",
+      "actions": {
+        "fold": { "next": "btn_vs_hj" },
+        "call": { "size": 2.3, "next": "btn_vs_hj_co_flat" },
+        "raise": { "size": 6.9, "next": "btn_vs_co_3bet_hj" }
+      }
+    },
+
+    "btn_vs_hj": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "sb_vs_hj" },
+        "call": { "size": 2.3, "next": "sb_vs_hj_btn_flat" },
+        "raise": { "size": 6.9, "next": "sb_vs_btn_3bet_hj" }
+      }
+    },
+
+    "sb_vs_hj": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "bb_vs_hj" },
+        "call": { "size": 2.3, "next": "bb_vs_hj_sb_flat" },
+        "raise": { "size": 9.2, "next": "bb_vs_sb_3bet_hj" }
+      }
+    },
+
+    "bb_vs_hj": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "hj_wins" },
+        "call": { "size": 2.3, "next": "terminal", "result": "flop", "pot": 5.3 },
+        "raise": { "size": 9.8, "next": "hj_vs_bb_3bet" }
+      }
+    },
+
+    "hj_vs_bb_3bet": {
+      "player": "HJ",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 9.8, "next": "terminal", "result": "flop", "pot": 21.4 },
+        "raise": { "size": 16.0, "next": "bb_vs_hj_4bet" },
+        "allin": { "size": 50.0, "next": "bb_facing_hj_allin" }
+      }
+    },
+
+    "bb_vs_hj_4bet": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "hj_wins" },
+        "call": { "size": 16.0, "next": "terminal", "result": "flop", "pot": 34.0 },
+        "allin": { "size": 50.0, "next": "hj_facing_bb_5bet" }
+      }
+    },
+
+    "hj_facing_bb_5bet": {
+      "player": "HJ",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_hj_allin": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "hj_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+
+    "btn_vs_co": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "sb_vs_co" },
+        "call": { "size": 2.3, "next": "sb_vs_co_btn_flat" },
+        "raise": { "size": 6.9, "next": "sb_vs_btn_3bet_co" }
+      }
+    },
+
+    "sb_vs_co": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "bb_vs_co" },
+        "call": { "size": 2.3, "next": "bb_vs_co_sb_flat" },
+        "raise": { "size": 9.2, "next": "bb_vs_sb_3bet_co" }
+      }
+    },
+
+    "bb_vs_co": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "co_wins" },
+        "call": { "size": 2.3, "next": "terminal", "result": "flop", "pot": 5.3 },
+        "raise": { "size": 9.8, "next": "co_vs_bb_3bet" }
+      }
+    },
+
+    "co_vs_bb_3bet": {
+      "player": "CO",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 9.8, "next": "terminal", "result": "flop", "pot": 21.4 },
+        "raise": { "size": 16.0, "next": "bb_vs_co_4bet" },
+        "allin": { "size": 50.0, "next": "bb_facing_co_allin" }
+      }
+    },
+
+    "bb_vs_co_4bet": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "co_wins" },
+        "call": { "size": 16.0, "next": "terminal", "result": "flop", "pot": 34.0 },
+        "allin": { "size": 50.0, "next": "co_facing_bb_5bet" }
+      }
+    },
+
+    "co_facing_bb_5bet": {
+      "player": "CO",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_co_allin": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "co_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+
+    "sb_vs_btn": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "bb_vs_btn" },
+        "call": { "size": 2.3, "next": "bb_vs_btn_sb_flat" },
+        "raise": { "size": 9.2, "next": "bb_vs_sb_3bet_btn" }
+      }
+    },
+
+    "bb_vs_btn": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "btn_wins" },
+        "call": { "size": 2.3, "next": "terminal", "result": "flop", "pot": 5.3 },
+        "raise": { "size": 9.8, "next": "btn_vs_bb_3bet" }
+      }
+    },
+
+    "btn_vs_bb_3bet": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 9.8, "next": "terminal", "result": "flop", "pot": 21.4 },
+        "raise": { "size": 15.0, "next": "bb_vs_btn_4bet" },
+        "allin": { "size": 50.0, "next": "bb_facing_btn_allin" }
+      }
+    },
+
+    "bb_vs_btn_4bet": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "btn_wins" },
+        "call": { "size": 15.0, "next": "terminal", "result": "flop", "pot": 32.0 },
+        "allin": { "size": 50.0, "next": "btn_facing_bb_5bet" }
+      }
+    },
+
+    "btn_facing_bb_5bet": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_btn_allin": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "btn_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_vs_btn_sb_flat": {
+      "player": "BB",
+      "actions": {
+        "check": { "next": "terminal", "result": "flop", "pot": 6.9 },
+        "raise": { "size": 9.8, "next": "btn_vs_bb_squeeze" }
+      }
+    },
+
+    "btn_vs_bb_squeeze": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "sb_vs_bb_squeeze_btn_fold" },
+        "call": { "size": 9.8, "next": "sb_vs_bb_squeeze_btn_call" },
+        "raise": { "size": 15.0, "next": "sb_vs_btn_4bet_squeeze" },
+        "allin": { "size": 50.0, "next": "sb_facing_btn_allin_squeeze" }
+      }
+    },
+
+    "sb_vs_bb_squeeze_btn_fold": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 9.8, "next": "terminal", "result": "flop", "pot": 21.6 }
+      }
+    },
+
+    "sb_vs_bb_squeeze_btn_call": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "flop_btn_bb", "pot": 22.4 },
+        "call": { "size": 9.8, "next": "terminal", "result": "flop_3way", "pot": 29.4 }
+      }
+    },
+
+    "sb_vs_btn_4bet_squeeze": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "bb_vs_btn_4bet_sb_fold" },
+        "allin": { "size": 50.0, "next": "bb_facing_sb_allin_btn_4bet" }
+      }
+    },
+
+    "bb_vs_btn_4bet_sb_fold": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "btn_wins" },
+        "call": { "size": 15.0, "next": "terminal", "result": "flop", "pot": 34.6 },
+        "allin": { "size": 50.0, "next": "btn_facing_bb_5bet_squeeze" }
+      }
+    },
+
+    "btn_facing_bb_5bet_squeeze": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_sb_allin_btn_4bet": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "btn_facing_sb_allin_bb_fold" },
+        "call": { "size": 50.0, "next": "btn_facing_sb_bb_allin" }
+      }
+    },
+
+    "btn_facing_sb_allin_bb_fold": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "btn_facing_sb_bb_allin": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "terminal", "result": "showdown_sb_bb" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" }
+      }
+    },
+
+    "sb_facing_btn_allin_squeeze": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "bb_facing_btn_allin_sb_fold" },
+        "call": { "size": 50.0, "next": "bb_facing_btn_sb_allin" }
+      }
+    },
+
+    "bb_facing_btn_allin_sb_fold": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "btn_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_btn_sb_allin": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "showdown_btn_sb" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" }
+      }
+    },
+
+    "bb_vs_sb_3bet_btn": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "btn_vs_sb_3bet" },
+        "raise": { "size": 22.0, "next": "btn_vs_bb_cold_4bet" },
+        "allin": { "size": 50.0, "next": "sb_facing_bb_allin_btn" }
+      }
+    },
+
+    "btn_vs_sb_3bet": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 9.2, "next": "terminal", "result": "flop", "pot": 20.4 },
+        "raise": { "size": 15.0, "next": "sb_vs_btn_4bet" },
+        "allin": { "size": 50.0, "next": "sb_facing_btn_allin" }
+      }
+    },
+
+    "sb_vs_btn_4bet": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "btn_wins" },
+        "call": { "size": 15.0, "next": "terminal", "result": "flop", "pot": 32.0 },
+        "allin": { "size": 50.0, "next": "btn_facing_sb_5bet" }
+      }
+    },
+
+    "btn_facing_sb_5bet": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "sb_facing_btn_allin": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "btn_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "btn_vs_bb_cold_4bet": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "sb_vs_bb_cold_4bet_btn_fold" },
+        "call": { "size": 22.0, "next": "sb_vs_bb_cold_4bet_btn_call" },
+        "allin": { "size": 50.0, "next": "sb_facing_btn_allin_bb_4bet" }
+      }
+    },
+
+    "sb_vs_bb_cold_4bet_btn_fold": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 22.0, "next": "terminal", "result": "flop", "pot": 46.0 },
+        "allin": { "size": 50.0, "next": "bb_facing_sb_5bet_cold" }
+      }
+    },
+
+    "bb_facing_sb_5bet_cold": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "sb_vs_bb_cold_4bet_btn_call": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "flop_btn_bb", "pot": 48.3 },
+        "call": { "size": 22.0, "next": "terminal", "result": "flop_3way", "pot": 66.0 },
+        "allin": { "size": 50.0, "next": "btn_facing_sb_allin_bb_call" }
+      }
+    },
+
+    "btn_facing_sb_allin_bb_call": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "bb_facing_sb_allin_btn_fold" },
+        "call": { "size": 50.0, "next": "bb_facing_sb_btn_allin" }
+      }
+    },
+
+    "bb_facing_sb_allin_btn_fold": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_sb_btn_allin": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "showdown_sb_btn" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" }
+      }
+    },
+
+    "sb_facing_btn_allin_bb_4bet": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "bb_facing_btn_allin_sb_fold_cold" },
+        "call": { "size": 50.0, "next": "bb_facing_sb_btn_allin_cold" }
+      }
+    },
+
+    "bb_facing_btn_allin_sb_fold_cold": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "btn_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_sb_btn_allin_cold": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "showdown_sb_btn" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" }
+      }
+    },
+
+    "sb_facing_bb_allin_btn": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "btn_facing_bb_allin_sb_fold" },
+        "call": { "size": 50.0, "next": "btn_facing_sb_bb_allin_cold" }
+      }
+    },
+
+    "btn_facing_bb_allin_sb_fold": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "btn_facing_sb_bb_allin_cold": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "terminal", "result": "showdown_sb_bb" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" }
+      }
+    },
+
+
+    "sb_first": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "limp": { "size": 1.0, "next": "bb_vs_limp" },
+        "raise": { "size": 3.5, "next": "bb_vs_sb_open" }
+      }
+    },
+
+    "bb_vs_limp": {
+      "player": "BB",
+      "actions": {
+        "check": { "next": "terminal", "result": "flop", "pot": 2.0 },
+        "raise_3.5": { "size": 3.5, "next": "sb_vs_bb_raise_3.5" },
+        "raise_6": { "size": 6.0, "next": "sb_vs_bb_raise_6" }
+      }
+    },
+
+    "sb_vs_bb_raise_3.5": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 3.5, "next": "terminal", "result": "flop", "pot": 7.0 },
+        "raise_10": { "size": 10.0, "next": "bb_vs_sb_3bet_10" },
+        "raise_15": { "size": 15.0, "next": "bb_vs_sb_3bet_15" },
+        "allin": { "size": 50.0, "next": "bb_facing_allin_limp" }
+      }
+    },
+
+    "sb_vs_bb_raise_6": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 6.0, "next": "terminal", "result": "flop", "pot": 12.0 },
+        "raise_14": { "size": 14.0, "next": "bb_vs_sb_3bet_14" },
+        "allin": { "size": 50.0, "next": "bb_facing_allin_limp" }
+      }
+    },
+
+    "bb_vs_sb_3bet_10": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 10.0, "next": "terminal", "result": "flop", "pot": 20.0 },
+        "raise_22": { "size": 22.0, "next": "sb_vs_bb_4bet_limp" },
+        "allin": { "size": 50.0, "next": "sb_facing_allin_limp" }
+      }
+    },
+
+    "bb_vs_sb_3bet_14": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 14.0, "next": "terminal", "result": "flop", "pot": 28.0 },
+        "allin": { "size": 50.0, "next": "sb_facing_allin_limp" }
+      }
+    },
+
+    "bb_vs_sb_3bet_15": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 15.0, "next": "terminal", "result": "flop", "pot": 30.0 },
+        "raise_32": { "size": 32.0, "next": "sb_vs_bb_4bet_limp" },
+        "allin": { "size": 50.0, "next": "sb_facing_allin_limp" }
+      }
+    },
+
+    "sb_vs_bb_4bet_limp": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "next": "terminal", "result": "flop" },
+        "allin": { "size": 50.0, "next": "bb_facing_5bet_limp" }
+      }
+    },
+
+    "sb_facing_allin_limp": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_allin_limp": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_5bet_limp": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_vs_sb_open": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 3.5, "next": "terminal", "result": "flop", "pot": 7.0 },
+        "raise_9": { "size": 9.0, "next": "sb_vs_bb_3bet" }
+      }
+    },
+
+    "sb_vs_bb_3bet": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 9.0, "next": "terminal", "result": "flop", "pot": 18.0 },
+        "raise_17": { "size": 17.0, "next": "bb_vs_sb_4bet" },
+        "allin": { "size": 50.0, "next": "bb_facing_sb_allin_open" }
+      }
+    },
+
+    "bb_vs_sb_4bet": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 17.0, "next": "terminal", "result": "flop", "pot": 34.0 },
+        "allin": { "size": 50.0, "next": "sb_facing_bb_5bet" }
+      }
+    },
+
+    "sb_facing_bb_5bet": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_sb_allin_open": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "sb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+
+    "lj_vs_utg_utg1_flat": {
+      "player": "LJ",
+      "actions": {
+        "fold": { "next": "hj_vs_utg_utg1_flat" },
+        "call": { "size": 2.3, "next": "hj_vs_utg_utg1_lj_flat" },
+        "raise": { "size": 8.1, "next": "hj_vs_lj_squeeze_utg" }
+      }
+    },
+
+    "hj_vs_utg_utg1_flat": {
+      "player": "HJ",
+      "actions": {
+        "fold": { "next": "co_vs_utg_utg1_flat" },
+        "call": { "size": 2.3, "next": "co_vs_utg_flat_chain" },
+        "raise": { "size": 8.1, "next": "co_vs_hj_squeeze_utg" }
+      }
+    },
+
+    "co_vs_utg_utg1_flat": {
+      "player": "CO",
+      "actions": {
+        "fold": { "next": "btn_vs_utg_utg1_flat" },
+        "call": { "size": 2.3, "next": "btn_vs_utg_flat_chain" },
+        "raise": { "size": 8.1, "next": "btn_vs_co_squeeze_utg" }
+      }
+    },
+
+    "btn_vs_utg_utg1_flat": {
+      "player": "BTN",
+      "actions": {
+        "fold": { "next": "sb_vs_utg_utg1_flat" },
+        "call": { "size": 2.3, "next": "sb_vs_utg_flat_chain" },
+        "raise": { "size": 8.1, "next": "sb_vs_btn_squeeze_utg" }
+      }
+    },
+
+    "sb_vs_utg_utg1_flat": {
+      "player": "SB",
+      "actions": {
+        "fold": { "next": "bb_vs_utg_utg1_flat" },
+        "call": { "size": 2.3, "next": "bb_vs_utg_flat_chain" },
+        "raise": { "size": 10.4, "next": "bb_vs_sb_squeeze_utg" }
+      }
+    },
+
+    "bb_vs_utg_utg1_flat": {
+      "player": "BB",
+      "actions": {
+        "check": { "next": "terminal", "result": "flop_3way", "pot": 7.9 },
+        "raise": { "size": 10.4, "next": "utg_vs_bb_squeeze" }
+      }
+    },
+
+    "utg_vs_bb_squeeze": {
+      "player": "UTG",
+      "actions": {
+        "fold": { "next": "utg1_vs_bb_squeeze_utg_fold" },
+        "call": { "size": 10.4, "next": "utg1_vs_bb_squeeze_utg_call" },
+        "raise": { "size": 16.0, "next": "utg1_vs_utg_4bet_squeeze" },
+        "allin": { "size": 50.0, "next": "utg1_facing_utg_allin_squeeze" }
+      }
+    },
+
+    "utg1_vs_bb_squeeze_utg_fold": {
+      "player": "UTG1",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 10.4, "next": "terminal", "result": "flop", "pot": 23.1 }
+      }
+    },
+
+    "utg1_vs_bb_squeeze_utg_call": {
+      "player": "UTG1",
+      "actions": {
+        "fold": { "next": "terminal", "result": "flop_utg_bb", "pot": 23.1 },
+        "call": { "size": 10.4, "next": "terminal", "result": "flop_3way", "pot": 33.5 }
+      }
+    },
+
+    "utg1_vs_utg_4bet_squeeze": {
+      "player": "UTG1",
+      "actions": {
+        "fold": { "next": "bb_vs_utg_4bet_squeeze" },
+        "allin": { "size": 50.0, "next": "bb_facing_utg1_allin_squeeze" }
+      }
+    },
+
+    "bb_vs_utg_4bet_squeeze": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "utg_wins" },
+        "call": { "size": 16.0, "next": "terminal", "result": "flop", "pot": 35.7 },
+        "allin": { "size": 50.0, "next": "utg_facing_bb_5bet_squeeze" }
+      }
+    },
+
+    "utg_facing_bb_5bet_squeeze": {
+      "player": "UTG",
+      "actions": {
+        "fold": { "next": "terminal", "result": "bb_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "utg1_facing_utg_allin_squeeze": {
+      "player": "UTG1",
+      "actions": {
+        "fold": { "next": "bb_facing_utg_allin_utg1_fold" },
+        "call": { "size": 50.0, "next": "bb_facing_utg_utg1_allin" }
+      }
+    },
+
+    "bb_facing_utg_allin_utg1_fold": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "utg_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "bb_facing_utg_utg1_allin": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "terminal", "result": "showdown_utg_utg1" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" }
+      }
+    },
+
+    "bb_facing_utg1_allin_squeeze": {
+      "player": "BB",
+      "actions": {
+        "fold": { "next": "utg_facing_utg1_allin_bb_fold" },
+        "call": { "size": 50.0, "next": "utg_facing_bb_utg1_allin" }
+      }
+    },
+
+    "utg_facing_utg1_allin_bb_fold": {
+      "player": "UTG",
+      "actions": {
+        "fold": { "next": "terminal", "result": "utg1_wins" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown" }
+      }
+    },
+
+    "utg_facing_bb_utg1_allin": {
+      "player": "UTG",
+      "actions": {
+        "fold": { "next": "terminal", "result": "showdown_bb_utg1" },
+        "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" }
+      }
+    },
+
+
+    "hj_vs_utg_utg1_lj_flat": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" }, "call": { "size": 2.3, "next": "terminal", "result": "flop_multiway" } } },
+    "co_vs_utg_flat_chain": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" }, "call": { "size": 2.3, "next": "terminal", "result": "flop_multiway" } } },
+    "btn_vs_utg_flat_chain": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" }, "call": { "size": 2.3, "next": "terminal", "result": "flop_multiway" } } },
+    "sb_vs_utg_flat_chain": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" }, "call": { "size": 2.3, "next": "terminal", "result": "flop_multiway" } } },
+    "bb_vs_utg_flat_chain": { "player": "BB", "actions": { "check": { "next": "terminal", "result": "flop_multiway" } } },
+
+    "hj_vs_lj_squeeze_utg": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "squeeze_continue" } } },
+    "co_vs_hj_squeeze_utg": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "squeeze_continue" } } },
+    "btn_vs_co_squeeze_utg": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "squeeze_continue" } } },
+    "sb_vs_btn_squeeze_utg": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "squeeze_continue" } } },
+    "bb_vs_sb_squeeze_utg": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "squeeze_continue" } } },
+
+    "hj_vs_utg1_lj_flat": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "co_vs_utg1_hj_flat": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "btn_vs_utg1_co_flat": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "sb_vs_utg1_btn_flat": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "bb_vs_utg1_sb_flat": { "player": "BB", "actions": { "check": { "next": "terminal", "result": "flop_multiway" } } },
+
+    "lj_vs_utg1_3bet": { "player": "LJ", "actions": { "fold": { "next": "utg1_vs_lj_3bet" } } },
+    "hj_vs_lj_3bet_utg1": { "player": "HJ", "actions": { "fold": { "next": "utg1_vs_lj_3bet" } } },
+    "co_vs_hj_3bet_utg1": { "player": "CO", "actions": { "fold": { "next": "utg1_vs_hj_3bet" } } },
+    "btn_vs_co_3bet_utg1": { "player": "BTN", "actions": { "fold": { "next": "utg1_vs_co_3bet" } } },
+    "sb_vs_btn_3bet_utg1": { "player": "SB", "actions": { "fold": { "next": "utg1_vs_btn_3bet" } } },
+    "bb_vs_sb_3bet_utg1": { "player": "BB", "actions": { "fold": { "next": "utg1_vs_sb_3bet" } } },
+
+    "utg1_vs_lj_3bet": { "player": "UTG1", "actions": { "fold": { "next": "terminal", "result": "lj_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "lj_vs_utg1_4bet" }, "allin": { "size": 50.0, "next": "lj_facing_utg1_allin" } } },
+    "utg1_vs_hj_3bet": { "player": "UTG1", "actions": { "fold": { "next": "terminal", "result": "hj_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "hj_vs_utg1_4bet" }, "allin": { "size": 50.0, "next": "hj_facing_utg1_allin" } } },
+    "utg1_vs_co_3bet": { "player": "UTG1", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "co_vs_utg1_4bet" }, "allin": { "size": 50.0, "next": "co_facing_utg1_allin" } } },
+    "utg1_vs_btn_3bet": { "player": "UTG1", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "btn_vs_utg1_4bet" }, "allin": { "size": 50.0, "next": "btn_facing_utg1_allin" } } },
+    "utg1_vs_sb_3bet": { "player": "UTG1", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 9.2, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "sb_vs_utg1_4bet" }, "allin": { "size": 50.0, "next": "sb_facing_utg1_allin" } } },
+
+    "lj_vs_utg1_4bet": { "player": "LJ", "actions": { "fold": { "next": "terminal", "result": "utg1_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "utg1_facing_lj_5bet" } } },
+    "hj_vs_utg1_4bet": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "utg1_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "utg1_facing_hj_5bet" } } },
+    "co_vs_utg1_4bet": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "utg1_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "utg1_facing_co_5bet" } } },
+    "btn_vs_utg1_4bet": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "utg1_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "utg1_facing_btn_5bet" } } },
+    "sb_vs_utg1_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "utg1_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "utg1_facing_sb_5bet" } } },
+
+    "utg1_facing_lj_5bet": { "player": "UTG1", "actions": { "fold": { "next": "terminal", "result": "lj_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "utg1_facing_hj_5bet": { "player": "UTG1", "actions": { "fold": { "next": "terminal", "result": "hj_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "utg1_facing_co_5bet": { "player": "UTG1", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "utg1_facing_btn_5bet": { "player": "UTG1", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "utg1_facing_sb_5bet": { "player": "UTG1", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+
+    "lj_facing_utg1_allin": { "player": "LJ", "actions": { "fold": { "next": "terminal", "result": "utg1_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "hj_facing_utg1_allin": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "utg1_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "co_facing_utg1_allin": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "utg1_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "btn_facing_utg1_allin": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "utg1_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "sb_facing_utg1_allin": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "utg1_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+
+    "hj_vs_lj_3bet_utg": { "player": "HJ", "actions": { "fold": { "next": "utg_vs_lj_3bet" } } },
+    "co_vs_hj_3bet_utg": { "player": "CO", "actions": { "fold": { "next": "utg_vs_hj_3bet" } } },
+    "btn_vs_co_3bet_utg": { "player": "BTN", "actions": { "fold": { "next": "utg_vs_co_3bet" } } },
+    "sb_vs_btn_3bet_utg": { "player": "SB", "actions": { "fold": { "next": "utg_vs_btn_3bet" } } },
+    "bb_vs_sb_3bet_utg": { "player": "BB", "actions": { "fold": { "next": "utg_vs_sb_3bet" } } },
+
+    "utg_vs_lj_3bet": { "player": "UTG", "actions": { "fold": { "next": "terminal", "result": "lj_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "lj_vs_utg_4bet" }, "allin": { "size": 50.0, "next": "lj_facing_utg_allin" } } },
+    "utg_vs_hj_3bet": { "player": "UTG", "actions": { "fold": { "next": "terminal", "result": "hj_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "hj_vs_utg_4bet" }, "allin": { "size": 50.0, "next": "hj_facing_utg_allin" } } },
+    "utg_vs_co_3bet": { "player": "UTG", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "co_vs_utg_4bet" }, "allin": { "size": 50.0, "next": "co_facing_utg_allin" } } },
+    "utg_vs_btn_3bet": { "player": "UTG", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "btn_vs_utg_4bet" }, "allin": { "size": 50.0, "next": "btn_facing_utg_allin" } } },
+    "utg_vs_sb_3bet": { "player": "UTG", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 9.2, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "sb_vs_utg_4bet" }, "allin": { "size": 50.0, "next": "sb_facing_utg_allin" } } },
+
+    "lj_vs_utg_4bet": { "player": "LJ", "actions": { "fold": { "next": "terminal", "result": "utg_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "utg_facing_lj_5bet" } } },
+    "hj_vs_utg_4bet": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "utg_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "utg_facing_hj_5bet" } } },
+    "co_vs_utg_4bet": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "utg_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "utg_facing_co_5bet" } } },
+    "btn_vs_utg_4bet": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "utg_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "utg_facing_btn_5bet" } } },
+    "sb_vs_utg_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "utg_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "utg_facing_sb_5bet" } } },
+
+    "utg_facing_lj_5bet": { "player": "UTG", "actions": { "fold": { "next": "terminal", "result": "lj_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "utg_facing_hj_5bet": { "player": "UTG", "actions": { "fold": { "next": "terminal", "result": "hj_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "utg_facing_co_5bet": { "player": "UTG", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "utg_facing_btn_5bet": { "player": "UTG", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "utg_facing_sb_5bet": { "player": "UTG", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+
+    "lj_facing_utg_allin": { "player": "LJ", "actions": { "fold": { "next": "terminal", "result": "utg_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "hj_facing_utg_allin": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "utg_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "co_facing_utg_allin": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "utg_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "btn_facing_utg_allin": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "utg_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "sb_facing_utg_allin": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "utg_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+
+    "co_vs_lj_hj_flat": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "btn_vs_lj_co_flat": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "sb_vs_lj_btn_flat": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "bb_vs_lj_sb_flat": { "player": "BB", "actions": { "check": { "next": "terminal", "result": "flop_multiway" } } },
+
+    "btn_vs_co_3bet_lj": { "player": "BTN", "actions": { "fold": { "next": "lj_vs_co_3bet" } } },
+    "sb_vs_btn_3bet_lj": { "player": "SB", "actions": { "fold": { "next": "lj_vs_btn_3bet" } } },
+    "bb_vs_sb_3bet_lj": { "player": "BB", "actions": { "fold": { "next": "lj_vs_sb_3bet" } } },
+
+    "lj_vs_co_3bet": { "player": "LJ", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "co_vs_lj_4bet" }, "allin": { "size": 50.0, "next": "co_facing_lj_allin" } } },
+    "lj_vs_btn_3bet": { "player": "LJ", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "btn_vs_lj_4bet" }, "allin": { "size": 50.0, "next": "btn_facing_lj_allin" } } },
+    "lj_vs_sb_3bet": { "player": "LJ", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 9.2, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "sb_vs_lj_4bet" }, "allin": { "size": 50.0, "next": "sb_facing_lj_allin" } } },
+
+    "co_vs_lj_4bet": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "lj_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "lj_facing_co_5bet" } } },
+    "btn_vs_lj_4bet": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "lj_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "lj_facing_btn_5bet" } } },
+    "sb_vs_lj_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "lj_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "lj_facing_sb_5bet" } } },
+
+    "lj_facing_co_5bet": { "player": "LJ", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "lj_facing_btn_5bet": { "player": "LJ", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "lj_facing_sb_5bet": { "player": "LJ", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+
+    "co_facing_lj_allin": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "lj_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "btn_facing_lj_allin": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "lj_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "sb_facing_lj_allin": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "lj_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+
+    "btn_vs_hj_co_flat": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "sb_vs_hj_btn_flat": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "bb_vs_hj_sb_flat": { "player": "BB", "actions": { "check": { "next": "terminal", "result": "flop_multiway" } } },
+
+    "btn_vs_co_3bet_hj": { "player": "BTN", "actions": { "fold": { "next": "hj_vs_co_3bet" } } },
+    "sb_vs_btn_3bet_hj": { "player": "SB", "actions": { "fold": { "next": "hj_vs_btn_3bet" } } },
+    "bb_vs_sb_3bet_hj": { "player": "BB", "actions": { "fold": { "next": "hj_vs_sb_3bet" } } },
+
+    "hj_vs_co_3bet": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "co_vs_hj_4bet" }, "allin": { "size": 50.0, "next": "co_facing_hj_allin" } } },
+    "hj_vs_btn_3bet": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "btn_vs_hj_4bet" }, "allin": { "size": 50.0, "next": "btn_facing_hj_allin" } } },
+    "hj_vs_sb_3bet": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 9.2, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "sb_vs_hj_4bet" }, "allin": { "size": 50.0, "next": "sb_facing_hj_allin" } } },
+
+    "co_vs_hj_4bet": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "hj_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "hj_facing_co_5bet" } } },
+    "btn_vs_hj_4bet": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "hj_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "hj_facing_btn_5bet" } } },
+    "sb_vs_hj_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "hj_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "hj_facing_sb_5bet" } } },
+
+    "hj_facing_co_5bet": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "hj_facing_btn_5bet": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "hj_facing_sb_5bet": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+
+    "co_facing_hj_allin": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "hj_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "btn_facing_hj_allin": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "hj_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "sb_facing_hj_allin": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "hj_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+
+    "sb_vs_co_btn_flat": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "bb_vs_co_sb_flat": { "player": "BB", "actions": { "check": { "next": "terminal", "result": "flop_multiway" } } },
+
+    "sb_vs_btn_3bet_co": { "player": "SB", "actions": { "fold": { "next": "co_vs_btn_3bet" }, "call": { "size": 6.9, "next": "bb_vs_co_sb_cold_call" }, "raise": { "size": 15.0, "next": "bb_vs_sb_4bet_co" }, "allin": { "size": 50.0, "next": "bb_facing_sb_allin_co" } } },
+    "bb_vs_co_sb_cold_call": { "player": "BB", "actions": { "fold": { "next": "co_vs_btn_3bet_sb_cold" }, "call": { "size": 6.9, "next": "co_vs_btn_3bet_bb_sb_cold" }, "allin": { "size": 50.0, "next": "co_facing_bb_allin_btn_3bet" } } },
+    "co_vs_btn_3bet_sb_cold": { "player": "CO", "actions": { "fold": { "next": "btn_vs_sb_cold_co_fold" }, "call": { "size": 6.9, "next": "btn_vs_co_sb_cold" }, "allin": { "size": 50.0, "next": "btn_facing_co_allin_sb_cold" } } },
+    "btn_vs_sb_cold_co_fold": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" } } },
+    "btn_vs_co_sb_cold": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "flop_co_sb" }, "call": { "size": 6.9, "next": "terminal", "result": "flop_3way" } } },
+    "btn_facing_co_allin_sb_cold": { "player": "BTN", "actions": { "fold": { "next": "sb_facing_co_allin_btn_fold" }, "call": { "size": 50.0, "next": "sb_facing_co_btn_allin" } } },
+    "sb_facing_co_allin_btn_fold": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "sb_facing_co_btn_allin": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "showdown_co_btn" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "co_vs_btn_3bet_bb_sb_cold": { "player": "CO", "actions": { "fold": { "next": "btn_vs_bb_sb_cold_co_fold" }, "call": { "size": 6.9, "next": "btn_vs_co_bb_sb_cold" }, "allin": { "size": 50.0, "next": "btn_facing_co_allin_bb_sb_cold" } } },
+    "btn_vs_bb_sb_cold_co_fold": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "flop_bb_sb" }, "call": { "size": 6.9, "next": "terminal", "result": "flop_3way" } } },
+    "btn_vs_co_bb_sb_cold": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "flop_3way" }, "call": { "size": 6.9, "next": "terminal", "result": "flop_4way" } } },
+    "btn_facing_co_allin_bb_sb_cold": { "player": "BTN", "actions": { "fold": { "next": "sb_facing_co_allin_btn_fold_bb" }, "call": { "size": 50.0, "next": "sb_facing_co_btn_allin_bb" } } },
+    "sb_facing_co_allin_btn_fold_bb": { "player": "SB", "actions": { "fold": { "next": "bb_facing_co_allin_btn_sb_fold" }, "call": { "size": 50.0, "next": "bb_facing_co_sb_allin_btn_fold" } } },
+    "bb_facing_co_allin_btn_sb_fold": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "bb_facing_co_sb_allin_btn_fold": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_co_sb" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "sb_facing_co_btn_allin_bb": { "player": "SB", "actions": { "fold": { "next": "bb_facing_co_btn_allin_sb_fold" }, "call": { "size": 50.0, "next": "bb_facing_co_btn_sb_allin" } } },
+    "bb_facing_co_btn_allin_sb_fold": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_co_btn" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "bb_facing_co_btn_sb_allin": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_3way" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_4way" } } },
+    "co_vs_bb_squeeze_btn_3bet": { "player": "CO", "actions": { "fold": { "next": "btn_vs_bb_squeeze_co_fold" }, "call": { "size": 18.0, "next": "btn_vs_bb_squeeze_co_call" }, "allin": { "size": 50.0, "next": "btn_facing_co_allin_bb_squeeze" } } },
+    "btn_vs_bb_squeeze_co_fold": { "player": "BTN", "actions": { "fold": { "next": "sb_vs_bb_squeeze_btn_co_fold" }, "call": { "size": 18.0, "next": "sb_vs_bb_squeeze_btn_call_co_fold" }, "allin": { "size": 50.0, "next": "sb_facing_btn_allin_bb_squeeze" } } },
+    "sb_vs_bb_squeeze_btn_co_fold": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "bb_wins" }, "call": { "size": 18.0, "next": "terminal", "result": "flop" } } },
+    "sb_vs_bb_squeeze_btn_call_co_fold": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "flop_bb_btn" }, "call": { "size": 18.0, "next": "terminal", "result": "flop_3way" } } },
+    "sb_facing_btn_allin_bb_squeeze": { "player": "SB", "actions": { "fold": { "next": "bb_facing_btn_allin_sb_fold_squeeze" }, "call": { "size": 50.0, "next": "bb_facing_btn_sb_allin_squeeze" } } },
+    "bb_facing_btn_allin_sb_fold_squeeze": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "bb_facing_btn_sb_allin_squeeze": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_btn_sb" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "btn_vs_bb_squeeze_co_call": { "player": "BTN", "actions": { "fold": { "next": "sb_vs_bb_squeeze_co_call_btn_fold" }, "call": { "size": 18.0, "next": "sb_vs_bb_squeeze_co_btn_call" }, "allin": { "size": 50.0, "next": "sb_facing_btn_allin_co_call" } } },
+    "sb_vs_bb_squeeze_co_call_btn_fold": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "flop_bb_co" }, "call": { "size": 18.0, "next": "terminal", "result": "flop_3way" } } },
+    "sb_vs_bb_squeeze_co_btn_call": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "flop_3way" }, "call": { "size": 18.0, "next": "terminal", "result": "flop_4way" } } },
+    "sb_facing_btn_allin_co_call": { "player": "SB", "actions": { "fold": { "next": "co_facing_btn_allin_sb_fold" }, "call": { "size": 50.0, "next": "co_facing_btn_sb_allin" } } },
+    "co_facing_btn_allin_sb_fold": { "player": "CO", "actions": { "fold": { "next": "bb_facing_btn_allin_co_sb_fold" }, "call": { "size": 50.0, "next": "bb_facing_btn_co_allin_sb_fold" } } },
+    "bb_facing_btn_allin_co_sb_fold": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "bb_facing_btn_co_allin_sb_fold": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_btn_co" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "co_facing_btn_sb_allin": { "player": "CO", "actions": { "fold": { "next": "bb_facing_btn_sb_allin_co_fold" }, "call": { "size": 50.0, "next": "bb_facing_btn_co_sb_allin" } } },
+    "bb_facing_btn_sb_allin_co_fold": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_btn_sb" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "bb_facing_btn_co_sb_allin": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_3way" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_4way" } } },
+    "btn_facing_co_allin_bb_squeeze": { "player": "BTN", "actions": { "fold": { "next": "sb_facing_co_allin_btn_fold_squeeze" }, "call": { "size": 50.0, "next": "sb_facing_co_btn_allin_squeeze" } } },
+    "sb_facing_co_allin_btn_fold_squeeze": { "player": "SB", "actions": { "fold": { "next": "bb_facing_co_allin_btn_sb_fold_squeeze" }, "call": { "size": 50.0, "next": "bb_facing_co_sb_allin_btn_fold_squeeze" } } },
+    "bb_facing_co_allin_btn_sb_fold_squeeze": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "bb_facing_co_sb_allin_btn_fold_squeeze": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_co_sb" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "sb_facing_co_btn_allin_squeeze": { "player": "SB", "actions": { "fold": { "next": "bb_facing_co_btn_allin_sb_fold_squeeze" }, "call": { "size": 50.0, "next": "bb_facing_co_btn_sb_allin_squeeze" } } },
+    "bb_facing_co_btn_allin_sb_fold_squeeze": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_co_btn" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "bb_facing_co_btn_sb_allin_squeeze": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_3way" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_4way" } } },
+    "co_facing_bb_allin_btn_3bet": { "player": "CO", "actions": { "fold": { "next": "btn_facing_bb_allin_co_fold" }, "call": { "size": 50.0, "next": "btn_facing_bb_co_allin" } } },
+    "btn_facing_bb_allin_co_fold": { "player": "BTN", "actions": { "fold": { "next": "sb_facing_bb_allin_btn_co_fold" }, "call": { "size": 50.0, "next": "sb_facing_bb_btn_allin_co_fold" } } },
+    "sb_facing_bb_allin_btn_co_fold": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "bb_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "sb_facing_bb_btn_allin_co_fold": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "showdown_bb_btn" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "btn_facing_bb_co_allin": { "player": "BTN", "actions": { "fold": { "next": "sb_facing_bb_co_allin_btn_fold" }, "call": { "size": 50.0, "next": "sb_facing_bb_co_btn_allin" } } },
+    "sb_facing_bb_co_allin_btn_fold": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "showdown_bb_co" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "sb_facing_bb_co_btn_allin": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "showdown_3way" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_4way" } } },
+    "bb_vs_sb_4bet_co": { "player": "BB", "actions": { "fold": { "next": "co_vs_sb_4bet" }, "call": { "size": 15.0, "next": "co_vs_sb_4bet_bb_call" }, "allin": { "size": 50.0, "next": "co_facing_bb_allin_sb_4bet" } } },
+    "co_vs_sb_4bet": { "player": "CO", "actions": { "fold": { "next": "btn_vs_sb_4bet_co_fold" }, "allin": { "size": 50.0, "next": "btn_facing_co_allin_sb_4bet" } } },
+    "btn_vs_sb_4bet_co_fold": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "allin": { "size": 50.0, "next": "sb_facing_btn_allin_4bet" } } },
+    "sb_facing_btn_allin_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "btn_facing_co_allin_sb_4bet": { "player": "BTN", "actions": { "fold": { "next": "sb_facing_co_allin_btn_fold_4bet" }, "call": { "size": 50.0, "next": "sb_facing_co_btn_allin_4bet" } } },
+    "sb_facing_co_allin_btn_fold_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "sb_facing_co_btn_allin_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "showdown_co_btn" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "co_vs_sb_4bet_bb_call": { "player": "CO", "actions": { "fold": { "next": "btn_vs_sb_4bet_bb_call_co_fold" }, "allin": { "size": 50.0, "next": "btn_facing_co_allin_sb_4bet_bb_call" } } },
+    "btn_vs_sb_4bet_bb_call_co_fold": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "flop_sb_bb" }, "allin": { "size": 50.0, "next": "sb_facing_btn_allin_4bet_bb_call" } } },
+    "sb_facing_btn_allin_4bet_bb_call": { "player": "SB", "actions": { "fold": { "next": "bb_facing_btn_allin_sb_fold_4bet" }, "call": { "size": 50.0, "next": "bb_facing_btn_sb_allin_4bet" } } },
+    "bb_facing_btn_allin_sb_fold_4bet": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "bb_facing_btn_sb_allin_4bet": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_btn_sb" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "btn_facing_co_allin_sb_4bet_bb_call": { "player": "BTN", "actions": { "fold": { "next": "sb_facing_co_allin_btn_fold_4bet_bb" }, "call": { "size": 50.0, "next": "sb_facing_co_btn_allin_4bet_bb" } } },
+    "sb_facing_co_allin_btn_fold_4bet_bb": { "player": "SB", "actions": { "fold": { "next": "bb_facing_co_allin_sb_btn_fold" }, "call": { "size": 50.0, "next": "bb_facing_co_sb_allin_btn_fold_4bet" } } },
+    "bb_facing_co_allin_sb_btn_fold": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "bb_facing_co_sb_allin_btn_fold_4bet": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_co_sb" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "sb_facing_co_btn_allin_4bet_bb": { "player": "SB", "actions": { "fold": { "next": "bb_facing_co_btn_allin_sb_fold_4bet" }, "call": { "size": 50.0, "next": "bb_facing_co_btn_sb_allin_4bet" } } },
+    "bb_facing_co_btn_allin_sb_fold_4bet": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_co_btn" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "bb_facing_co_btn_sb_allin_4bet": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_3way" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_4way" } } },
+    "co_facing_bb_allin_sb_4bet": { "player": "CO", "actions": { "fold": { "next": "btn_facing_bb_allin_co_fold_sb_4bet" }, "call": { "size": 50.0, "next": "btn_facing_bb_co_allin_sb_4bet" } } },
+    "btn_facing_bb_allin_co_fold_sb_4bet": { "player": "BTN", "actions": { "fold": { "next": "sb_facing_bb_allin_btn_co_fold_4bet" }, "call": { "size": 50.0, "next": "sb_facing_bb_btn_allin_co_fold_4bet" } } },
+    "sb_facing_bb_allin_btn_co_fold_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "bb_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "sb_facing_bb_btn_allin_co_fold_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "showdown_bb_btn" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "btn_facing_bb_co_allin_sb_4bet": { "player": "BTN", "actions": { "fold": { "next": "sb_facing_bb_co_allin_btn_fold_4bet" }, "call": { "size": 50.0, "next": "sb_facing_bb_co_btn_allin_4bet" } } },
+    "sb_facing_bb_co_allin_btn_fold_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "showdown_bb_co" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "sb_facing_bb_co_btn_allin_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "showdown_3way" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_4way" } } },
+    "bb_facing_sb_allin_co": { "player": "BB", "actions": { "fold": { "next": "co_facing_sb_allin_bb_fold" }, "call": { "size": 50.0, "next": "co_facing_sb_bb_allin" } } },
+    "co_facing_sb_allin_bb_fold": { "player": "CO", "actions": { "fold": { "next": "btn_facing_sb_allin_co_bb_fold" }, "call": { "size": 50.0, "next": "btn_facing_sb_co_allin_bb_fold" } } },
+    "btn_facing_sb_allin_co_bb_fold": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "btn_facing_sb_co_allin_bb_fold": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "showdown_sb_co" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "co_facing_sb_bb_allin": { "player": "CO", "actions": { "fold": { "next": "btn_facing_sb_bb_allin_co_fold" }, "call": { "size": 50.0, "next": "btn_facing_sb_bb_co_allin" } } },
+    "btn_facing_sb_bb_allin_co_fold": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "showdown_sb_bb" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "btn_facing_sb_bb_co_allin": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "showdown_3way" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_4way" } } },
+    "bb_vs_sb_3bet_co": { "player": "BB", "actions": { "fold": { "next": "co_vs_sb_3bet" }, "call": { "size": 9.2, "next": "co_vs_sb_3bet_bb_cold" }, "raise": { "size": 22.0, "next": "co_vs_bb_4bet_sb_3bet" }, "allin": { "size": 50.0, "next": "co_facing_bb_allin_sb_3bet" } } },
+    "co_vs_sb_3bet_bb_cold": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "flop_sb_bb" }, "call": { "size": 9.2, "next": "terminal", "result": "flop_3way" }, "allin": { "size": 50.0, "next": "sb_facing_co_allin_bb_cold" } } },
+    "sb_facing_co_allin_bb_cold": { "player": "SB", "actions": { "fold": { "next": "bb_facing_co_allin_sb_fold_cold" }, "call": { "size": 50.0, "next": "bb_facing_co_sb_allin_cold" } } },
+    "bb_facing_co_allin_sb_fold_cold": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "bb_facing_co_sb_allin_cold": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_co_sb" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "co_vs_bb_4bet_sb_3bet": { "player": "CO", "actions": { "fold": { "next": "sb_vs_bb_4bet_co_fold" }, "allin": { "size": 50.0, "next": "sb_facing_co_allin_bb_4bet" } } },
+    "sb_vs_bb_4bet_co_fold": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "bb_wins" }, "call": { "size": 22.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "bb_facing_sb_5bet_co_fold" } } },
+    "bb_facing_sb_5bet_co_fold": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "sb_facing_co_allin_bb_4bet": { "player": "SB", "actions": { "fold": { "next": "bb_facing_co_allin_sb_fold_4bet" }, "call": { "size": 50.0, "next": "bb_facing_co_sb_allin_4bet" } } },
+    "bb_facing_co_allin_sb_fold_4bet": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "bb_facing_co_sb_allin_4bet": { "player": "BB", "actions": { "fold": { "next": "terminal", "result": "showdown_co_sb" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+    "co_facing_bb_allin_sb_3bet": { "player": "CO", "actions": { "fold": { "next": "sb_facing_bb_allin_co_fold" }, "call": { "size": 50.0, "next": "sb_facing_bb_co_allin" } } },
+    "sb_facing_bb_allin_co_fold": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "bb_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "sb_facing_bb_co_allin": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "showdown_bb_co" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown_3way" } } },
+
+    "co_vs_btn_3bet": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 6.9, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "btn_vs_co_4bet" }, "allin": { "size": 50.0, "next": "btn_facing_co_allin" } } },
+    "co_vs_sb_3bet": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 9.2, "next": "terminal", "result": "flop" }, "raise": { "size": 16.0, "next": "sb_vs_co_4bet" }, "allin": { "size": 50.0, "next": "sb_facing_co_allin" } } },
+
+    "btn_vs_co_4bet": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "co_facing_btn_5bet" } } },
+    "sb_vs_co_4bet": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 16.0, "next": "terminal", "result": "flop" }, "allin": { "size": 50.0, "next": "co_facing_sb_5bet" } } },
+
+    "co_facing_btn_5bet": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "btn_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "co_facing_sb_5bet": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "sb_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+
+    "btn_facing_co_allin": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+    "sb_facing_co_allin": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "co_wins" }, "call": { "size": 50.0, "next": "terminal", "result": "showdown" } } },
+
+    "sb_vs_utg_btn_flat": { "player": "SB", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "bb_vs_utg_sb_flat": { "player": "BB", "actions": { "check": { "next": "terminal", "result": "flop_multiway" } } },
+    "hj_vs_utg_lj_flat": { "player": "HJ", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "co_vs_utg_hj_flat": { "player": "CO", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } },
+    "btn_vs_utg_co_flat": { "player": "BTN", "actions": { "fold": { "next": "terminal", "result": "flop_multiway" } } }
   }
 }
