@@ -170,14 +170,19 @@ fn main() {
     let start_time = Instant::now();
 
     if use_ci_mode {
-        // CI-based convergence mode
+        // CI-based convergence mode (parallel)
         let ci = ci_target.unwrap();
-        let ci_check_interval = 100u64; // Check CI every 100 iterations
+        let batch_size = 100u64; // Run 100 iterations per batch
 
-        let result = solver.train_until_converged(
+        // Print thread info
+        println!("Using {} threads for parallel training", if threads > 0 { threads.to_string() } else { "auto".to_string() });
+        println!();
+
+        let result = solver.train_parallel_until_converged(
             ci,
-            ci_check_interval,
+            batch_size,
             max_iterations,
+            threads,
             Some(|stats: &ConvergenceStats| {
                 // Calculate ETA if max_iterations is set
                 let eta_str = if max_iterations > 0 && stats.iterations_per_second > 0.0 {

@@ -5,14 +5,18 @@
 //! - **CFR+**: Floors negative regrets to zero for faster convergence
 //! - **Linear CFR**: Weights later iterations more heavily
 //! - **MCCFR**: Monte Carlo sampling for large games
+//! - **Parallel MCCFR**: Multi-threaded version using rayon
 //!
 //! The solver is generic over any game that implements the `Game` trait.
 
 use std::marker::PhantomData;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::Instant;
 
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
+use rayon::prelude::*;
 
 use crate::cfr::config::{CFRConfig, CFRStats};
 use crate::cfr::game::{Game, InfoState};
@@ -658,6 +662,275 @@ impl<G: Game> CFRSolver<G> {
         self.iteration = 0;
         self.stats = CFRStats::new();
     }
+
+    /// Run multiple iterations in parallel using all available CPU cores.
+    ///
+    /// This is the recommended method for large games. Each thread runs
+    /// independent game tree traversals with its own RNG, and regrets
+    /// are accumulated in thread-safe storage.
+    ///
+    /// # Arguments
+    /// * `num_iterations` - Total number of iterations to run
+    /// * `num_threads` - Number of threads (0 = auto-detect)
+    pub fn run_parallel_iterations(&mut self, num_iterations: u64, num_threads: usize)
+    where
+        G: Send + Sync,
+    {
+        // Configure thread pool
+        if num_threads > 0 {
+            rayon::ThreadPoolBuilder::new()
+                .num_threads(num_threads)
+                .build_global()
+                .ok(); // Ignore error if pool already built
+        }
+
+        let actual_threads = rayon::current_num_threads();
+
+        // Shared references for parallel access
+        let storage = &self.storage;
+        let game = &self.game;
+        let config = &self.config;
+        let iteration_counter = AtomicU64::new(self.iteration);
+
+        // Run parallel iterations
+        (0..num_iterations).into_par_iter().for_each(|_| {
+            // Thread-local RNG
+            let mut rng = StdRng::from_entropy();
+
+            // Increment iteration counter
+            let iter = iteration_counter.fetch_add(1, Ordering::Relaxed) + 1;
+
+            // Traverse for each player
+            for player in 0..game.num_players() {
+                let initial_state = game.initial_state();
+                let reach_probs = vec![1.0; game.num_players()];
+
+                parallel_traverse(
+                    game,
+                    storage,
+                    config,
+                    &mut rng,
+                    &initial_state,
+                    player,
+                    reach_probs,
+                    iter,
+                );
+            }
+        });
+
+        // Update iteration count
+        self.iteration = iteration_counter.load(Ordering::Relaxed);
+    }
+
+    /// Train in parallel until convergence.
+    ///
+    /// Like `train_until_converged` but uses all CPU cores.
+    pub fn train_parallel_until_converged<F>(
+        &mut self,
+        ci_target: f64,
+        batch_size: u64,
+        max_iterations: u64,
+        num_threads: usize,
+        mut callback: Option<F>,
+    ) -> ConvergenceResult
+    where
+        G: Send + Sync,
+        F: FnMut(&ConvergenceStats),
+    {
+        use crate::cfr::storage::StrategySnapshot;
+
+        let start_time = Instant::now();
+        let mut snapshot: Option<StrategySnapshot> = None;
+        let mut current_ci = f64::INFINITY;
+
+        // Minimum iterations before checking convergence
+        let warmup_iterations = batch_size.max(1000);
+        let min_iterations_for_convergence = 5000u64;
+
+        loop {
+            // Run a batch of parallel iterations
+            self.run_parallel_iterations(batch_size, num_threads);
+
+            let elapsed = start_time.elapsed().as_secs_f64();
+            let iters_per_sec = if elapsed > 0.0 {
+                self.iteration as f64 / elapsed
+            } else {
+                0.0
+            };
+
+            // Check convergence after warmup
+            if self.iteration >= warmup_iterations {
+                if snapshot.is_none() {
+                    snapshot = Some(self.storage.snapshot_strategies());
+                    let conv_stats = ConvergenceStats {
+                        iteration: self.iteration,
+                        ci: current_ci,
+                        info_sets: self.storage.num_info_sets(),
+                        elapsed_seconds: elapsed,
+                        iterations_per_second: iters_per_sec,
+                    };
+                    if let Some(ref mut cb) = callback {
+                        cb(&conv_stats);
+                    }
+                    continue;
+                }
+
+                // Calculate CI
+                current_ci = self.storage.calculate_ci(snapshot.as_ref().unwrap());
+
+                let conv_stats = ConvergenceStats {
+                    iteration: self.iteration,
+                    ci: current_ci,
+                    info_sets: self.storage.num_info_sets(),
+                    elapsed_seconds: elapsed,
+                    iterations_per_second: iters_per_sec,
+                };
+
+                if let Some(ref mut cb) = callback {
+                    cb(&conv_stats);
+                }
+
+                // Check if converged
+                if current_ci <= ci_target && self.iteration >= min_iterations_for_convergence {
+                    return ConvergenceResult {
+                        converged: true,
+                        final_ci: current_ci,
+                        iterations: self.iteration,
+                        elapsed_seconds: elapsed,
+                    };
+                }
+
+                // Take new snapshot
+                snapshot = Some(self.storage.snapshot_strategies());
+            } else {
+                // During warmup, still report progress
+                let conv_stats = ConvergenceStats {
+                    iteration: self.iteration,
+                    ci: current_ci,
+                    info_sets: self.storage.num_info_sets(),
+                    elapsed_seconds: elapsed,
+                    iterations_per_second: iters_per_sec,
+                };
+                if let Some(ref mut cb) = callback {
+                    cb(&conv_stats);
+                }
+            }
+
+            // Check max iterations
+            if max_iterations > 0 && self.iteration >= max_iterations {
+                return ConvergenceResult {
+                    converged: false,
+                    final_ci: current_ci,
+                    iterations: self.iteration,
+                    elapsed_seconds: start_time.elapsed().as_secs_f64(),
+                };
+            }
+        }
+    }
+}
+
+/// Parallel traversal function (used by run_parallel_iterations).
+fn parallel_traverse<G: Game>(
+    game: &G,
+    storage: &RegretStorage,
+    config: &CFRConfig,
+    rng: &mut StdRng,
+    state: &G::State,
+    traverser: usize,
+    reach_probs: Vec<f64>,
+    iteration: u64,
+) -> f64 {
+    // Terminal node
+    if game.is_terminal(state) {
+        return game.get_payoff(state, traverser);
+    }
+
+    // Chance node
+    if game.is_chance(state) {
+        let new_state = game.sample_chance(state, rng);
+        return parallel_traverse(game, storage, config, rng, &new_state, traverser, reach_probs, iteration);
+    }
+
+    // Get current player
+    let current_player = match game.current_player(state) {
+        Some(p) => p,
+        None => return game.get_payoff(state, traverser),
+    };
+
+    let actions = game.available_actions(state);
+    let num_actions = actions.len();
+
+    if num_actions == 0 {
+        return game.get_payoff(state, traverser);
+    }
+
+    // Get info state and strategy
+    let info_state = game.info_state(state);
+    let info_key = info_state.key();
+    let strategy = storage.get_current_strategy(&info_key, num_actions);
+
+    if current_player == traverser {
+        // Traverser: explore all actions
+        let mut action_values = vec![0.0; num_actions];
+
+        for (i, action) in actions.iter().enumerate() {
+            let new_state = game.apply_action(state, action);
+            let mut new_reach = reach_probs.clone();
+            new_reach[traverser] *= strategy[i];
+            action_values[i] = parallel_traverse(game, storage, config, rng, &new_state, traverser, new_reach, iteration);
+        }
+
+        // Compute node value
+        let node_value: f64 = strategy.iter().zip(action_values.iter()).map(|(&s, &v)| s * v).sum();
+
+        // Compute and update regrets
+        let regret_updates: Vec<f64> = action_values.iter().map(|&v| v - node_value).collect();
+        storage.update_regrets(&info_key, &regret_updates, config.use_cfr_plus);
+
+        // Store action names
+        let action_names: Vec<String> = actions.iter().map(|a| game.action_name(a)).collect();
+        storage.set_action_names(&info_key, action_names);
+
+        // Update strategy sum
+        let weight = if config.use_linear_cfr {
+            reach_probs[traverser] * iteration as f64
+        } else {
+            reach_probs[traverser]
+        };
+        storage.update_strategy_sum(&info_key, &strategy, weight);
+
+        node_value
+    } else {
+        // Opponent: sample one action
+        let action_idx = if rng.gen::<f64>() < config.exploration {
+            rng.gen_range(0..num_actions)
+        } else {
+            sample_action_from_strategy(rng, &strategy)
+        };
+
+        let action = &actions[action_idx];
+        let new_state = game.apply_action(state, action);
+
+        let mut new_reach = reach_probs;
+        new_reach[current_player] *= strategy[action_idx];
+
+        parallel_traverse(game, storage, config, rng, &new_state, traverser, new_reach, iteration)
+    }
+}
+
+/// Sample action from strategy distribution.
+fn sample_action_from_strategy(rng: &mut StdRng, strategy: &[f64]) -> usize {
+    let r: f64 = rng.gen();
+    let mut cumsum = 0.0;
+
+    for (i, &prob) in strategy.iter().enumerate() {
+        cumsum += prob;
+        if r < cumsum {
+            return i;
+        }
+    }
+
+    strategy.len() - 1
 }
 
 /// Serializable solver state for checkpointing.
