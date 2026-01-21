@@ -280,8 +280,9 @@ impl<G: Game> CFRSolver<G> {
                 }
 
                 // Check if converged (require minimum iterations to avoid false convergence)
-                // CI can be misleadingly low early when strategies haven't been visited enough
-                let min_iterations_for_convergence = 5000u64;
+                // Rule of thumb: need ~10-20 visits per info set for meaningful convergence
+                // With N info sets, need roughly N * 10 iterations minimum
+                let min_iterations_for_convergence = (self.storage.num_info_sets() as u64 * 10).max(10000);
                 if current_ci <= ci_target && self.iteration >= min_iterations_for_convergence {
                     return ConvergenceResult {
                         converged: true,
@@ -745,7 +746,6 @@ impl<G: Game> CFRSolver<G> {
 
         // Minimum iterations before checking convergence
         let warmup_iterations = batch_size.max(1000);
-        let min_iterations_for_convergence = 5000u64;
 
         loop {
             // Run a batch of parallel iterations
@@ -790,7 +790,9 @@ impl<G: Game> CFRSolver<G> {
                     cb(&conv_stats);
                 }
 
-                // Check if converged
+                // Check if converged (require enough iterations to visit info sets adequately)
+                // Rule of thumb: need ~10 visits per info set for meaningful convergence
+                let min_iterations_for_convergence = (self.storage.num_info_sets() as u64 * 10).max(10000);
                 if current_ci <= ci_target && self.iteration >= min_iterations_for_convergence {
                     return ConvergenceResult {
                         converged: true,
