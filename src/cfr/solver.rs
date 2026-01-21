@@ -376,6 +376,11 @@ impl<G: Game> CFRSolver<G> {
         &self.config
     }
 
+    /// Get all information set keys discovered during training.
+    pub fn info_set_keys(&self) -> Vec<String> {
+        self.storage.regrets().keys().cloned().collect()
+    }
+
     /// Calculate exploitability of current strategy.
     ///
     /// Exploitability measures how much value an optimal opponent could gain

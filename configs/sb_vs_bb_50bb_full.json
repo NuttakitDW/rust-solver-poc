@@ -1,0 +1,62 @@
+{
+  "version": "1.0",
+  "name": "SB vs BB 50bb Full Game",
+  "description": "SB vs BB heads-up with full postflop play (preflop to river)",
+
+  "stacks": {
+    "sb": 50.0,
+    "bb": 50.0
+  },
+
+  "blinds": {
+    "sb": 0.5,
+    "bb": 1.0,
+    "ante": 0.0
+  },
+
+  "preflop": {
+    "bet_sizes": [2.5, 3.5],
+    "raise_sizes": [2.5, 3.0],
+    "include_limp": true,
+    "include_allin_threshold_bb": 20.0
+  },
+
+  "postflop": {
+    "flop": {
+      "bet_sizes_pct": [66.0],
+      "raise_sizes_pct": [66.0],
+      "donk_allowed": false,
+      "allin_spr_threshold": 5.0
+    },
+    "turn": {
+      "bet_sizes_pct": [66.0],
+      "raise_sizes_pct": [66.0],
+      "donk_allowed": false,
+      "allin_spr_threshold": 5.0
+    },
+    "river": {
+      "bet_sizes_pct": [66.0],
+      "raise_sizes_pct": [66.0],
+      "donk_allowed": false,
+      "allin_spr_threshold": 5.0
+    }
+  },
+
+  "abstraction": {
+    "preflop_buckets": 169,
+    "flop_buckets": 1024,
+    "turn_buckets": 256,
+    "river_buckets": 256
+  },
+
+  "solver": {
+    "iterations": 100000,
+    "threads": 8,
+    "checkpoint_interval": 10000,
+    "use_cfr_plus": true,
+    "use_linear_cfr": true,
+    "pruning_threshold": 0.0,
+    "discount_interval": 1000,
+    "seed": 42
+  }
+}

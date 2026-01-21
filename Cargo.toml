@@ -25,6 +25,10 @@ indicatif = "0.17"
 [dev-dependencies]
 criterion = "0.5"
 
+[[bin]]
+name = "solve_full"
+path = "src/bin/solve_full.rs"
+
 [[bench]]
 name = "cfr_bench"
 harness = false

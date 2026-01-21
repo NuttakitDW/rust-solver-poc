@@ -558,7 +558,60 @@ mod tests {
 
     #[test]
     fn test_scenario_filter() {
-        let config_with_filter = PreflopConfig::from_json_file("configs/bb_vs_utg_50bb.json").unwrap();
+        // Config with a scenario filter for BB vs UTG only
+        let config_str = r#"{
+            "version": "1.0",
+            "name": "BB vs UTG",
+            "description": "Test filtered config",
+            "hand_data": {
+                "num_players": 8,
+                "positions": ["UTG", "EP", "MP", "HJ", "CO", "BU", "SB", "BB"],
+                "stacks": {
+                    "UTG": 50.0, "EP": 50.0, "MP": 50.0, "HJ": 50.0,
+                    "CO": 50.0, "BU": 50.0, "SB": 50.0, "BB": 50.0
+                }
+            },
+            "blinds": { "bb": 1.0, "sb": 0.5, "ante": 0.12, "ante_type": "REGULAR" },
+            "equity_model": { "type": "ChipEV", "raked": false },
+            "action_restrictions": {
+                "allowed_flats_per_raise": [0, 1, 1, 1, 0],
+                "allow_cold_calls": false,
+                "allow_flats_closing_action": true,
+                "allow_sb_complete": true,
+                "preflop_add_allin_spr": 7.0,
+                "preflop_allin_threshold": 40.0
+            },
+            "sizing": {
+                "open": {
+                    "others": { "base": 2.3, "per_caller": 1.0 },
+                    "bu": { "base": 2.3, "per_caller": 1.0 },
+                    "sb": { "base": 3.5, "per_caller": 1.0 },
+                    "bb": { "base": 3.5, "per_caller": 1.0 },
+                    "bb_vs_sb": { "base": 3.0, "per_caller": 0.0 }
+                },
+                "threebet": {
+                    "ip": { "base": 2.5, "per_caller": 1.0 },
+                    "bb_vs_sb": { "base": 2.5, "per_caller": 0.0 },
+                    "bb_vs_other": { "base": 3.3, "per_caller": 1.0 },
+                    "sb_vs_bb": { "base": 2.6, "per_caller": 1.0 },
+                    "sb_vs_other": { "base": 3.3, "per_caller": 1.0 }
+                },
+                "fourbet": {
+                    "ip": { "percent_pot": 0.90, "include_allin": true },
+                    "oop": { "percent_pot": 1.20, "include_allin": true }
+                },
+                "fivebet": {
+                    "ip": { "percent_pot": 0.90, "include_allin": true },
+                    "oop": { "percent_pot": 1.20, "include_allin": true }
+                }
+            },
+            "scenarios": {
+                "spots": [
+                    { "rfi": "UTG", "defender": "BB" }
+                ]
+            }
+        }"#;
+        let config_with_filter = PreflopConfig::from_json_str(config_str).unwrap();
 
         // Should include BB vs UTG
         assert!(config_with_filter.should_solve_spot("UTG", "BB"));
@@ -576,7 +629,8 @@ mod tests {
 
     #[test]
     fn test_no_filter_solves_all_spots() {
-        let config = PreflopConfig::from_json_file("configs/preflop_8max_50bb.json").unwrap();
+        // Use TEST_CONFIG which has no scenarios filter
+        let config = PreflopConfig::from_json_str(TEST_CONFIG).unwrap();
 
         // Without filter, all spots should be solved
         assert!(config.should_solve_spot("UTG", "BB"));
@@ -593,6 +647,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore] // Requires external config file: configs/preflop_8max_50bb.json
     fn test_load_hrc_config_file() {
         // Test loading the actual HRC config file
         let config = PreflopConfig::from_json_file("configs/preflop_8max_50bb.json").unwrap();
