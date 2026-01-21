@@ -87,19 +87,43 @@
             background: #007bff;
         }
 
-        .tabs {
+        .view-tabs {
             display: flex;
             justify-content: center;
             gap: 10px;
             margin-bottom: 20px;
         }
 
+        .view-tab {
+            background: #3a3a5a;
+            color: #aaa;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .view-tab:hover {
+            background: #4a4a6a;
+        }
+
+        .view-tab.active {
+            background: #007bff;
+            color: #fff;
+        }
+
         /* Preflop Chart Styles */
         .chart-container {
-            display: flex;
+            display: none;
             justify-content: center;
             gap: 40px;
             flex-wrap: wrap;
+        }
+
+        .chart-container.active {
+            display: flex;
         }
 
         .chart-wrapper {
@@ -135,6 +159,7 @@
             cursor: pointer;
             transition: transform 0.1s, box-shadow 0.1s;
             position: relative;
+            overflow: hidden;
         }
 
         .cell:hover {
@@ -144,7 +169,32 @@
         }
 
         .cell .hand-label {
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6);
+            position: relative;
+            z-index: 2;
+            font-weight: 700;
+        }
+
+        .cell.no-data {
+            background: #2a2a3a;
+            color: #555;
+        }
+
+        /* Segmented background for mixed strategies */
+        .cell-segments {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: row;
+            z-index: 1;
+        }
+
+        .cell-segment {
+            height: 100%;
+            flex-shrink: 0;
         }
 
         /* Postflop Styles */
@@ -156,19 +206,19 @@
             display: block;
         }
 
-        .preflop-container.active {
-            display: flex;
-        }
-
         .metadata-panel {
             background: #252540;
             border-radius: 12px;
             padding: 15px 20px;
             margin-bottom: 20px;
-            display: flex;
+            display: none;
             justify-content: center;
             gap: 30px;
             flex-wrap: wrap;
+        }
+
+        .metadata-panel.active {
+            display: flex;
         }
 
         .metadata-item {
@@ -271,10 +321,13 @@
         }
 
         .action-name {
-            width: 80px;
+            width: 100px;
             font-size: 12px;
             color: #aaa;
             text-align: right;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .bar-container {
@@ -298,11 +351,11 @@
             text-shadow: 0 1px 2px rgba(0,0,0,0.5);
         }
 
-        .bar-fill.fold { background: linear-gradient(90deg, #dc3545, #c82333); }
+        .bar-fill.fold { background: linear-gradient(90deg, #007bff, #0056b3); }
         .bar-fill.check { background: linear-gradient(90deg, #6c757d, #5a6268); }
         .bar-fill.call { background: linear-gradient(90deg, #28a745, #218838); }
         .bar-fill.bet { background: linear-gradient(90deg, #17a2b8, #138496); }
-        .bar-fill.raise { background: linear-gradient(90deg, #007bff, #0056b3); }
+        .bar-fill.raise { background: linear-gradient(90deg, #dc3545, #c82333); }
         .bar-fill.allin { background: linear-gradient(90deg, #fd7e14, #e96b02); }
 
         .tooltip {
@@ -316,7 +369,7 @@
             z-index: 1000;
             box-shadow: 0 4px 20px rgba(0,0,0,0.4);
             display: none;
-            min-width: 200px;
+            min-width: 220px;
         }
 
         .tooltip.visible {
@@ -472,39 +525,47 @@
             </label>
         </div>
 
-        <!-- Preflop Controls -->
-        <div class="controls preflop-controls" style="display:none">
+        <!-- View Tabs (for postflop format with preflop data) -->
+        <div class="view-tabs" id="viewTabs" style="display:none">
+            <button class="view-tab active" data-view="preflop-grid">Preflop Grid</button>
+            <button class="view-tab" data-view="postflop-list">All Strategies</button>
+        </div>
+
+        <!-- Preflop Grid Controls -->
+        <div class="controls preflop-grid-controls" id="preflopGridControls" style="display:none">
             <div class="control-group">
                 <label>Position:</label>
-                <select id="positionSelect" class="btn">
-                    <option value="">All</option>
+                <select id="preflopPositionFilter">
+                    <option value="0">SB (P0)</option>
+                    <option value="1">BB (P1)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Scenario:</label>
+                <select id="preflopScenarioFilter">
+                    <option value="">RFI (Open)</option>
                 </select>
             </div>
         </div>
 
         <!-- Postflop Controls -->
-        <div class="controls postflop-controls" style="display:none">
+        <div class="controls postflop-controls" id="postflopControls" style="display:none">
             <div class="control-group">
                 <label>Player:</label>
                 <select id="playerFilter">
                     <option value="">All</option>
-                    <option value="0">P0 (IP/SB)</option>
-                    <option value="1">P1 (OOP/BB)</option>
+                    <option value="0">P0 (SB)</option>
+                    <option value="1">P1 (BB)</option>
                 </select>
             </div>
             <div class="control-group">
                 <label>Street:</label>
                 <select id="streetFilter">
                     <option value="">All</option>
+                    <option value="0">Preflop</option>
                     <option value="1">Flop</option>
                     <option value="2">Turn</option>
                     <option value="3">River</option>
-                </select>
-            </div>
-            <div class="control-group">
-                <label>Bucket:</label>
-                <select id="bucketFilter">
-                    <option value="">All</option>
                 </select>
             </div>
             <div class="control-group">
@@ -513,8 +574,8 @@
             </div>
         </div>
 
-        <!-- Postflop Metadata -->
-        <div class="metadata-panel" id="metadataPanel" style="display:none">
+        <!-- Metadata Panel -->
+        <div class="metadata-panel" id="metadataPanel">
             <div class="metadata-item">
                 <div class="metadata-value" id="metaConfig">-</div>
                 <div class="metadata-label">Config</div>
@@ -533,11 +594,11 @@
             </div>
         </div>
 
-        <!-- Preflop Chart -->
-        <div class="chart-container preflop-container" id="chartContainer">
+        <!-- Preflop Grid View -->
+        <div class="chart-container" id="preflopGridContainer">
         </div>
 
-        <!-- Postflop List -->
+        <!-- Postflop List View -->
         <div class="postflop-container" id="postflopContainer">
             <div class="strategy-list" id="strategyList">
             </div>
@@ -549,72 +610,155 @@
         <div class="tooltip" id="tooltip"></div>
 
         <div class="info-panel">
-            <h3>Supported Formats</h3>
+            <h3>How to Use</h3>
             <p>
-                <strong>Preflop (solutions_example.json):</strong> 13×13 hand matrix with action frequencies per hand combo.<br><br>
-                <strong>Postflop (solution.json):</strong> Game tree with bucket-based strategies.<br>
-                • <strong>P0/P1</strong> = Player position<br>
-                • <strong>S1/S2/S3</strong> = Flop/Turn/River<br>
-                • <strong>B{n}</strong> = Hand strength bucket<br>
-                • <strong>Actions:</strong> X=Check, B=Bet, R=Raise, C=Call, A=All-in
+                <strong>solution.json (Solver Output):</strong><br>
+                • <strong>Preflop Grid</strong> - Shows 13×13 hand chart with action frequencies<br>
+                • <strong>All Strategies</strong> - Browse all info sets (preflop + postflop)<br><br>
+                <strong>Colors:</strong>
+                <span style="color:#007bff">Fold</span>,
+                <span style="color:#28a745">Call</span>,
+                <span style="color:#dc3545">Raise</span>,
+                <span style="color:#17a2b8">Bet</span>,
+                <span style="color:#6c757d">Check</span>,
+                <span style="color:#fd7e14">All-In</span>
             </p>
         </div>
     </div>
 
     <script>
-        // Hand matrix labels
-        const RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+        // Rank characters (index 0 = 2, index 12 = A)
+        const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
+        // For grid display (row/col 0 = A, row/col 12 = 2)
+        const GRID_RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
 
-        function getHandLabel(row, col) {
-            if (row === col) return RANKS[row] + RANKS[col];
-            else if (col > row) return RANKS[row] + RANKS[col] + 's';
-            else return RANKS[col] + RANKS[row] + 'o';
+        // Convert bucket (0-168) to hand name
+        // Matches Rust abstraction.rs: HandClass::from_index
+        function bucketToHand(bucket) {
+            if (bucket < 13) {
+                // Pairs: bucket 0 = 22, bucket 12 = AA
+                return RANKS[bucket] + RANKS[bucket];
+            } else if (bucket < 91) {
+                // Suited hands (13-90)
+                const idx = bucket - 13;
+                const [r1, r2] = decodeTriangular(idx);
+                return RANKS[r1] + RANKS[r2] + 's';
+            } else if (bucket < 169) {
+                // Offsuit hands (91-168)
+                const idx = bucket - 91;
+                const [r1, r2] = decodeTriangular(idx);
+                return RANKS[r1] + RANKS[r2] + 'o';
+            }
+            return `B${bucket}`;
         }
 
-        function getIndex(row, col) {
-            return row * 13 + col;
+        // Decode triangular index to (r1, r2) where r1 > r2
+        function decodeTriangular(idx) {
+            let r1 = 1;
+            let remaining = idx;
+            while (remaining >= r1) {
+                remaining -= r1;
+                r1++;
+            }
+            return [r1, remaining];
         }
 
+        // Convert hand name to grid position (row, col)
+        // Grid: row 0 = A, col 0 = A; diagonal = pairs; above = suited; below = offsuit
+        function handToGridPos(hand) {
+            const rank1 = hand[0];
+            const rank2 = hand[1];
+            const suited = hand.length === 3 && hand[2] === 's';
+            const offsuit = hand.length === 3 && hand[2] === 'o';
+            const isPair = rank1 === rank2;
+
+            const r1Idx = GRID_RANKS.indexOf(rank1);
+            const r2Idx = GRID_RANKS.indexOf(rank2);
+
+            if (isPair) {
+                return [r1Idx, r1Idx];
+            } else if (suited) {
+                // Suited: higher rank as row, lower rank as col (above diagonal)
+                return [Math.min(r1Idx, r2Idx), Math.max(r1Idx, r2Idx)];
+            } else {
+                // Offsuit: lower rank as row, higher rank as col (below diagonal)
+                return [Math.max(r1Idx, r2Idx), Math.min(r1Idx, r2Idx)];
+            }
+        }
+
+        // Get hand label for grid position
+        function getGridHandLabel(row, col) {
+            if (row === col) {
+                return GRID_RANKS[row] + GRID_RANKS[col];
+            } else if (col > row) {
+                return GRID_RANKS[row] + GRID_RANKS[col] + 's';
+            } else {
+                return GRID_RANKS[col] + GRID_RANKS[row] + 'o';
+            }
+        }
+
+        // Action colors: Fold = Blue, Call = Green, Raise = Red
         const ACTION_COLORS = {
-            'FOLD': '#dc3545',
-            'CALL': '#28a745',
-            'RAISE': '#007bff',
-            'ALLIN': '#fd7e14',
-            'CHECK': '#6c757d',
-            'BET': '#17a2b8'
+            'FOLD': '#007bff',      // Blue
+            'CALL': '#28a745',      // Green
+            'RAISE': '#dc3545',     // Red
+            'ALLIN': '#fd7e14',     // Orange
+            'ALL-IN': '#fd7e14',    // Orange
+            'CHECK': '#6c757d',     // Gray
+            'BET': '#17a2b8'        // Cyan
         };
 
-        function getActionColor(actionType) {
-            const type = actionType.toUpperCase();
+        // Priority order for sorting actions in segments (top to bottom)
+        const ACTION_PRIORITY = {
+            'RAISE': 1,
+            'ALLIN': 2,
+            'ALL-IN': 2,
+            'BET': 3,
+            'CALL': 4,
+            'CHECK': 5,
+            'FOLD': 6
+        };
+
+        function getActionColor(actionName) {
+            const upper = actionName.toUpperCase();
             for (const [key, color] of Object.entries(ACTION_COLORS)) {
-                if (type.includes(key)) return color;
+                if (upper.includes(key)) return color;
             }
             return '#6c757d';
         }
 
-        function blendColors(actions) {
-            if (actions.length === 0) return '#333';
-            if (actions.length === 1) return getActionColor(actions[0].type);
+        function getActionPriority(actionName) {
+            const upper = actionName.toUpperCase();
+            for (const [key, priority] of Object.entries(ACTION_PRIORITY)) {
+                if (upper.includes(key)) return priority;
+            }
+            return 99;
+        }
 
-            let r = 0, g = 0, b = 0;
-            let totalWeight = 0;
+        // Create segmented cell content for mixed strategies
+        function createCellSegments(actions) {
+            if (!actions || actions.length === 0) return null;
 
-            actions.forEach(action => {
-                const color = getActionColor(action.type);
-                const freq = action.frequency;
-                const rgb = hexToRgb(color);
-                r += rgb.r * freq;
-                g += rgb.g * freq;
-                b += rgb.b * freq;
-                totalWeight += freq;
+            // Sort by priority (aggressive actions on top)
+            const sorted = [...actions]
+                .filter(a => a.freq > 0.001) // Filter out tiny frequencies
+                .sort((a, b) => getActionPriority(a.name) - getActionPriority(b.name));
+
+            if (sorted.length === 0) return null;
+
+            // Create segments
+            const segments = document.createElement('div');
+            segments.className = 'cell-segments';
+
+            sorted.forEach(action => {
+                const segment = document.createElement('div');
+                segment.className = 'cell-segment';
+                segment.style.width = `${action.freq * 100}%`;
+                segment.style.backgroundColor = getActionColor(action.name);
+                segments.appendChild(segment);
             });
 
-            if (totalWeight === 0) return '#333';
-            r = Math.round(r / totalWeight);
-            g = Math.round(g / totalWeight);
-            b = Math.round(b / totalWeight);
-
-            return `rgb(${r}, ${g}, ${b})`;
+            return segments;
         }
 
         function hexToRgb(hex) {
@@ -626,95 +770,76 @@
             } : { r: 0, g: 0, b: 0 };
         }
 
+        // Global state
         let currentData = null;
-        let currentFormat = null;
+        let currentView = 'preflop-grid';
         let tooltip = document.getElementById('tooltip');
 
-        // Detect format
-        function detectFormat(data) {
-            if (data.action_solutions) return 'preflop';
-            if (data.strategies && data.metadata) return 'postflop';
-            return null;
-        }
-
-        // Parse preflop solution
-        function parsePreflopSolution(data) {
-            const actions = data.action_solutions || [];
-            const positions = new Set();
-
-            actions.forEach(a => {
-                if (a.action && a.action.position) {
-                    positions.add(a.action.position);
-                }
-            });
-
-            const handData = {};
-            for (let row = 0; row < 13; row++) {
-                for (let col = 0; col < 13; col++) {
-                    const hand = getHandLabel(row, col);
-                    const idx = getIndex(row, col);
-                    handData[hand] = { actions: [], row, col };
-
-                    actions.forEach(actionSol => {
-                        const freq = actionSol.strategy[idx] || 0;
-                        if (freq > 0) {
-                            handData[hand].actions.push({
-                                type: actionSol.action.type,
-                                displayName: actionSol.action.display_name,
-                                betsize: actionSol.action.betsize,
-                                frequency: freq,
-                                ev: actionSol.evs ? actionSol.evs[idx] : 0
-                            });
-                        }
-                    });
-                }
-            }
-
-            return { actions, positions: Array.from(positions), handData };
-        }
-
-        // Parse postflop solution
+        // Parse postflop solution (solution.json format)
         function parsePostflopSolution(data) {
             const metadata = data.metadata || {};
             const strategies = data.strategies || {};
-            const buckets = new Set();
 
-            const parsed = Object.values(strategies).map(s => {
-                buckets.add(s.bucket);
-                return {
-                    infoKey: s.info_key,
-                    position: s.position,
-                    street: s.street,
-                    bucket: s.bucket,
-                    history: s.history,
-                    actions: s.actions,
-                    strategy: s.strategy
-                };
-            });
+            const parsed = Object.values(strategies).map(s => ({
+                infoKey: s.info_key,
+                position: s.position,
+                street: s.street,
+                bucket: s.bucket,
+                history: s.history,
+                actions: s.actions,
+                strategy: s.strategy,
+                hand: s.street === 0 ? bucketToHand(s.bucket) : null
+            }));
 
-            // Sort by street, then position, then bucket
-            parsed.sort((a, b) => {
-                if (a.street !== b.street) return a.street - b.street;
-                if (a.position !== b.position) return a.position - b.position;
-                return a.bucket - b.bucket;
+            // Get unique scenarios (histories) for preflop
+            const preflopScenarios = new Set();
+            parsed.filter(s => s.street === 0).forEach(s => {
+                preflopScenarios.add(s.history);
             });
 
             return {
                 metadata,
                 strategies: parsed,
-                buckets: Array.from(buckets).sort((a, b) => a - b)
+                preflopScenarios: Array.from(preflopScenarios).sort()
             };
         }
 
-        // Render preflop chart
-        function renderPreflopChart(parsed) {
-            document.querySelector('.preflop-controls').style.display = 'flex';
-            document.querySelector('.postflop-controls').style.display = 'none';
-            document.getElementById('metadataPanel').style.display = 'none';
-            document.getElementById('chartContainer').classList.add('active');
-            document.getElementById('postflopContainer').classList.remove('active');
+        // Build preflop grid data
+        function buildPreflopGridData(parsed, position, historyFilter) {
+            const gridData = {};
 
-            const container = document.getElementById('chartContainer');
+            // Initialize all hands with no data
+            for (let row = 0; row < 13; row++) {
+                for (let col = 0; col < 13; col++) {
+                    const hand = getGridHandLabel(row, col);
+                    gridData[hand] = { actions: [], row, col };
+                }
+            }
+
+            // Fill in data from strategies
+            parsed.strategies
+                .filter(s => s.street === 0 && s.position === position)
+                .filter(s => historyFilter === '' ? s.history === '' : s.history === historyFilter)
+                .forEach(s => {
+                    const hand = s.hand;
+                    if (hand && gridData[hand]) {
+                        gridData[hand].actions = s.actions.map((name, i) => ({
+                            name: name,
+                            freq: s.strategy[i]
+                        })).filter(a => a.freq > 0);
+                    }
+                });
+
+            return gridData;
+        }
+
+        // Render preflop grid
+        function renderPreflopGrid(parsed) {
+            const position = parseInt(document.getElementById('preflopPositionFilter').value);
+            const historyFilter = document.getElementById('preflopScenarioFilter').value;
+            const gridData = buildPreflopGridData(parsed, position, historyFilter);
+
+            const container = document.getElementById('preflopGridContainer');
             container.innerHTML = '';
 
             const wrapper = document.createElement('div');
@@ -722,34 +847,49 @@
 
             const title = document.createElement('div');
             title.className = 'chart-title';
-            const position = parsed.actions[0]?.action?.position || 'Unknown';
-            title.textContent = `${position} Range`;
+            const posName = position === 0 ? 'SB' : 'BB';
+            const scenario = historyFilter === '' ? 'RFI (Open)' : historyFilter;
+            title.textContent = `${posName} - ${scenario}`;
             wrapper.appendChild(title);
 
             const grid = document.createElement('div');
             grid.className = 'grid';
 
+            // Collect all unique actions for legend
+            const allActions = new Set();
+
             for (let row = 0; row < 13; row++) {
                 for (let col = 0; col < 13; col++) {
-                    const hand = getHandLabel(row, col);
-                    const data = parsed.handData[hand];
+                    const hand = getGridHandLabel(row, col);
+                    const data = gridData[hand];
 
                     const cell = document.createElement('div');
                     cell.className = 'cell';
 
-                    const bgColor = blendColors(data.actions);
-                    cell.style.backgroundColor = bgColor;
+                    if (data.actions.length === 0) {
+                        cell.classList.add('no-data');
+                        cell.style.backgroundColor = '#2a2a3a';
+                        cell.style.color = '#555';
+                    } else {
+                        // Create segmented background for mixed strategies
+                        const segments = createCellSegments(data.actions);
+                        if (segments) {
+                            cell.appendChild(segments);
+                        }
 
-                    const rgb = hexToRgb(bgColor.replace('rgb(', '').replace(')', ''));
-                    const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
-                    cell.style.color = brightness > 128 ? '#000' : '#fff';
+                        // Collect actions for legend
+                        data.actions.forEach(a => allActions.add(a.name));
+
+                        // White text with shadow for readability over any color
+                        cell.style.color = '#fff';
+                    }
 
                     const label = document.createElement('span');
                     label.className = 'hand-label';
                     label.textContent = hand;
                     cell.appendChild(label);
 
-                    cell.addEventListener('mouseenter', (e) => showPreflopTooltip(e, hand, data));
+                    cell.addEventListener('mouseenter', (e) => showGridTooltip(e, hand, data));
                     cell.addEventListener('mousemove', moveTooltip);
                     cell.addEventListener('mouseleave', hideTooltip);
 
@@ -760,32 +900,37 @@
             wrapper.appendChild(grid);
             container.appendChild(wrapper);
 
-            renderPreflopLegend(parsed.actions);
-            renderPreflopStats(parsed);
+            // Render legend
+            renderGridLegend(Array.from(allActions));
+
+            // Render stats
+            const handsWithData = Object.values(gridData).filter(d => d.actions.length > 0).length;
+            document.getElementById('stats').innerHTML = `<span>Hands with data: ${handsWithData} / 169</span>`;
         }
 
-        function renderPreflopLegend(actions) {
+        function renderGridLegend(actionNames) {
             const legend = document.getElementById('legend');
             legend.innerHTML = '';
 
-            const actionTypes = {};
-            actions.forEach(a => {
-                const type = a.action.type;
-                if (!actionTypes[type]) {
-                    actionTypes[type] = { displayName: a.action.display_name, totalFreq: a.total_frequency };
+            // Deduplicate by action type
+            const types = {};
+            actionNames.forEach(name => {
+                const type = parseActionType(name);
+                if (!types[type]) {
+                    types[type] = name;
                 }
             });
 
-            for (const [type, info] of Object.entries(actionTypes)) {
+            for (const [type, name] of Object.entries(types)) {
                 const item = document.createElement('div');
                 item.className = 'legend-item';
 
                 const color = document.createElement('div');
                 color.className = 'legend-color';
-                color.style.backgroundColor = getActionColor(type);
+                color.style.backgroundColor = getActionColor(name);
 
                 const label = document.createElement('span');
-                label.textContent = `${info.displayName} (${(info.totalFreq * 100).toFixed(1)}%)`;
+                label.textContent = name.split(' ')[0]; // Just the action type
 
                 item.appendChild(color);
                 item.appendChild(label);
@@ -793,34 +938,22 @@
             }
         }
 
-        function renderPreflopStats(parsed) {
-            const stats = document.getElementById('stats');
-            const totalHands = Object.keys(parsed.handData).length;
-            const raisingHands = Object.values(parsed.handData).filter(h =>
-                h.actions.some(a => a.type === 'RAISE' && a.frequency > 0)
-            ).length;
-
-            stats.innerHTML = `
-                <span>Total hands: ${totalHands}</span>
-                <span>Raising range: ${raisingHands} hands (${(raisingHands/totalHands*100).toFixed(1)}%)</span>
-            `;
-        }
-
-        function showPreflopTooltip(e, hand, data) {
+        function showGridTooltip(e, hand, data) {
             let html = `<div class="tooltip-hand">${hand}</div>`;
 
             if (data.actions.length === 0) {
-                html += '<div style="color:#888">No data</div>';
+                html += '<div style="color:#666">No data for this spot</div>';
             } else {
-                data.actions.sort((a, b) => b.frequency - a.frequency);
-                data.actions.forEach(action => {
+                // Sort by frequency
+                const sorted = [...data.actions].sort((a, b) => b.freq - a.freq);
+                sorted.forEach(action => {
                     html += `
                         <div class="tooltip-row">
                             <div class="tooltip-action">
-                                <div class="tooltip-color" style="background:${getActionColor(action.type)}"></div>
-                                <span>${action.displayName}${action.betsize !== '0' ? ' ' + action.betsize + 'bb' : ''}</span>
+                                <div class="tooltip-color" style="background:${getActionColor(action.name)}"></div>
+                                <span>${action.name}</span>
                             </div>
-                            <span>${(action.frequency * 100).toFixed(1)}%</span>
+                            <span>${(action.freq * 100).toFixed(1)}%</span>
                         </div>
                     `;
                 });
@@ -831,53 +964,24 @@
             moveTooltip(e);
         }
 
-        // Render postflop strategies
-        function renderPostflopStrategies(parsed) {
-            document.querySelector('.preflop-controls').style.display = 'none';
-            document.querySelector('.postflop-controls').style.display = 'flex';
-            document.getElementById('metadataPanel').style.display = 'flex';
-            document.getElementById('chartContainer').classList.remove('active');
-            document.getElementById('postflopContainer').classList.add('active');
-
-            // Update metadata
-            document.getElementById('metaConfig').textContent = parsed.metadata.config_name || '-';
-            document.getElementById('metaStack').textContent = parsed.metadata.stack_bb || '-';
-            document.getElementById('metaIterations').textContent = parsed.metadata.iterations?.toLocaleString() || '-';
-            document.getElementById('metaInfoSets').textContent = parsed.metadata.num_info_sets?.toLocaleString() || '-';
-
-            // Populate bucket filter
-            const bucketFilter = document.getElementById('bucketFilter');
-            bucketFilter.innerHTML = '<option value="">All</option>';
-            parsed.buckets.forEach(b => {
-                const opt = document.createElement('option');
-                opt.value = b;
-                opt.textContent = `Bucket ${b}`;
-                bucketFilter.appendChild(opt);
-            });
-
-            renderFilteredStrategies(parsed);
-
-            // Add filter listeners
-            ['playerFilter', 'streetFilter', 'bucketFilter', 'historySearch'].forEach(id => {
-                document.getElementById(id).addEventListener('input', () => renderFilteredStrategies(parsed));
-            });
-
-            document.getElementById('legend').innerHTML = '';
-            document.getElementById('stats').innerHTML = `<span>Total info sets: ${parsed.strategies.length}</span>`;
-        }
-
-        function renderFilteredStrategies(parsed) {
+        // Render postflop list
+        function renderPostflopList(parsed) {
             const playerFilter = document.getElementById('playerFilter').value;
             const streetFilter = document.getElementById('streetFilter').value;
-            const bucketFilter = document.getElementById('bucketFilter').value;
             const historySearch = document.getElementById('historySearch').value.toLowerCase();
 
             let filtered = parsed.strategies.filter(s => {
-                if (playerFilter && s.position !== parseInt(playerFilter)) return false;
-                if (streetFilter && s.street !== parseInt(streetFilter)) return false;
-                if (bucketFilter && s.bucket !== parseInt(bucketFilter)) return false;
+                if (playerFilter !== '' && s.position !== parseInt(playerFilter)) return false;
+                if (streetFilter !== '' && s.street !== parseInt(streetFilter)) return false;
                 if (historySearch && !s.history.toLowerCase().includes(historySearch)) return false;
                 return true;
+            });
+
+            // Sort
+            filtered.sort((a, b) => {
+                if (a.street !== b.street) return a.street - b.street;
+                if (a.position !== b.position) return a.position - b.position;
+                return a.bucket - b.bucket;
             });
 
             const list = document.getElementById('strategyList');
@@ -888,7 +992,6 @@
                 return;
             }
 
-            // Limit display for performance
             const displayLimit = 200;
             const displayed = filtered.slice(0, displayLimit);
 
@@ -896,24 +999,25 @@
                 const card = document.createElement('div');
                 card.className = 'strategy-card';
 
-                const streetNames = { 1: 'Flop', 2: 'Turn', 3: 'River' };
+                const streetNames = { 0: 'Preflop', 1: 'Flop', 2: 'Turn', 3: 'River' };
+                const handLabel = strategy.hand ? ` (${strategy.hand})` : '';
 
                 card.innerHTML = `
                     <div class="strategy-header">
                         <div class="strategy-info">
                             <span class="position p${strategy.position}">P${strategy.position}</span>
                             <span class="street">${streetNames[strategy.street] || 'S' + strategy.street}</span>
-                            <span class="bucket">Bucket ${strategy.bucket}</span>
+                            <span class="bucket">Bucket ${strategy.bucket}${handLabel}</span>
                         </div>
                     </div>
-                    <div class="history-line">${formatHistory(strategy.history)}</div>
+                    <div class="history-line">${formatHistory(strategy.history) || '<em style="color:#555">Root (first action)</em>'}</div>
                     <div class="action-bars">
                         ${strategy.actions.map((action, i) => {
                             const prob = strategy.strategy[i] * 100;
                             const actionType = parseActionType(action);
                             return `
                                 <div class="action-bar">
-                                    <span class="action-name">${formatActionName(action)}</span>
+                                    <span class="action-name" title="${action}">${action}</span>
                                     <div class="bar-container">
                                         <div class="bar-fill ${actionType}" style="width: ${prob}%">
                                             ${prob >= 5 ? prob.toFixed(1) + '%' : ''}
@@ -934,9 +1038,13 @@
                 notice.textContent = `Showing ${displayLimit} of ${filtered.length} results. Use filters to narrow down.`;
                 list.appendChild(notice);
             }
+
+            document.getElementById('legend').innerHTML = '';
+            document.getElementById('stats').innerHTML = `<span>Showing: ${Math.min(displayLimit, filtered.length)} of ${filtered.length} info sets</span>`;
         }
 
         function formatHistory(history) {
+            if (!history) return '';
             return history
                 .replace(/\|/g, ' <span style="color:#555">|</span> ')
                 .replace(/R(\d+)/g, '<span style="color:#007bff">R$1</span>')
@@ -957,10 +1065,6 @@
             return 'bet';
         }
 
-        function formatActionName(action) {
-            return action;
-        }
-
         function moveTooltip(e) {
             const x = e.clientX + 15;
             const y = e.clientY + 15;
@@ -975,30 +1079,99 @@
             tooltip.classList.remove('visible');
         }
 
+        // Switch view
+        function switchView(view) {
+            currentView = view;
+
+            // Update tab styles
+            document.querySelectorAll('.view-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.view === view);
+            });
+
+            // Show/hide containers and controls
+            const isPreflopGrid = view === 'preflop-grid';
+            document.getElementById('preflopGridContainer').classList.toggle('active', isPreflopGrid);
+            document.getElementById('postflopContainer').classList.toggle('active', !isPreflopGrid);
+            document.getElementById('preflopGridControls').style.display = isPreflopGrid ? 'flex' : 'none';
+            document.getElementById('postflopControls').style.display = isPreflopGrid ? 'none' : 'flex';
+
+            // Re-render
+            if (currentData) {
+                if (isPreflopGrid) {
+                    renderPreflopGrid(currentData);
+                } else {
+                    renderPostflopList(currentData);
+                }
+            }
+        }
+
+        // Initialize UI for postflop format
+        function initPostflopUI(parsed) {
+            // Show view tabs
+            document.getElementById('viewTabs').style.display = 'flex';
+
+            // Show metadata
+            document.getElementById('metadataPanel').classList.add('active');
+            document.getElementById('metaConfig').textContent = parsed.metadata.config_name || '-';
+            document.getElementById('metaStack').textContent = parsed.metadata.stack_bb || '-';
+            document.getElementById('metaIterations').textContent = parsed.metadata.iterations?.toLocaleString() || '-';
+            document.getElementById('metaInfoSets').textContent = parsed.metadata.num_info_sets?.toLocaleString() || '-';
+
+            // Populate scenario filter
+            const scenarioFilter = document.getElementById('preflopScenarioFilter');
+            scenarioFilter.innerHTML = '<option value="">RFI (Open)</option>';
+            parsed.preflopScenarios.filter(s => s !== '').forEach(scenario => {
+                const opt = document.createElement('option');
+                opt.value = scenario;
+                opt.textContent = scenario || 'Open';
+                scenarioFilter.appendChild(opt);
+            });
+
+            // Add filter event listeners
+            document.getElementById('preflopPositionFilter').addEventListener('change', () => {
+                if (currentView === 'preflop-grid') renderPreflopGrid(currentData);
+            });
+            document.getElementById('preflopScenarioFilter').addEventListener('change', () => {
+                if (currentView === 'preflop-grid') renderPreflopGrid(currentData);
+            });
+
+            ['playerFilter', 'streetFilter', 'historySearch'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    if (currentView !== 'preflop-grid') renderPostflopList(currentData);
+                });
+            });
+
+            // Add view tab listeners
+            document.querySelectorAll('.view-tab').forEach(tab => {
+                tab.addEventListener('click', () => switchView(tab.dataset.view));
+            });
+
+            // Start with preflop grid view
+            switchView('preflop-grid');
+        }
+
         // File handling
         function handleFile(file) {
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
                     const data = JSON.parse(e.target.result);
-                    const format = detectFormat(data);
 
-                    if (!format) {
-                        alert('Unknown file format. Please use a valid solution JSON.');
-                        return;
-                    }
-
-                    currentFormat = format;
-                    const badge = document.getElementById('formatBadge');
-                    badge.textContent = format.charAt(0).toUpperCase() + format.slice(1);
-                    badge.className = `format-badge ${format}`;
-
-                    if (format === 'preflop') {
-                        currentData = parsePreflopSolution(data);
-                        renderPreflopChart(currentData);
-                    } else {
+                    // Check format
+                    if (data.strategies && data.metadata) {
+                        // Postflop format (solution.json)
                         currentData = parsePostflopSolution(data);
-                        renderPostflopStrategies(currentData);
+
+                        const badge = document.getElementById('formatBadge');
+                        badge.textContent = 'Solver Output';
+                        badge.className = 'format-badge postflop';
+
+                        initPostflopUI(currentData);
+                    } else if (data.action_solutions) {
+                        // Legacy preflop format
+                        alert('This is the old preflop format. Please use the new solver output format.');
+                    } else {
+                        alert('Unknown file format.');
                     }
                 } catch (err) {
                     alert('Error parsing JSON: ' + err.message);
@@ -1029,19 +1202,6 @@
             dropZone.classList.remove('dragover');
             if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
         });
-
-        // Auto-load example
-        fetch('solutions_example.json')
-            .then(res => res.json())
-            .then(data => {
-                currentFormat = 'preflop';
-                currentData = parsePreflopSolution(data);
-                renderPreflopChart(currentData);
-                const badge = document.getElementById('formatBadge');
-                badge.textContent = 'Preflop';
-                badge.className = 'format-badge preflop';
-            })
-            .catch(() => console.log('No default file found'));
     </script>
 </body>
 </html>
