@@ -172,7 +172,7 @@ fn main() {
     if use_ci_mode {
         // CI-based convergence mode
         let ci = ci_target.unwrap();
-        let ci_check_interval = 1000u64; // Check CI every 1000 iterations
+        let ci_check_interval = 100u64; // Check CI every 100 iterations
 
         let result = solver.train_until_converged(
             ci,
@@ -188,10 +188,17 @@ fn main() {
                     String::new()
                 };
 
+                // Format CI (show "warmup" if still infinity)
+                let ci_str = if stats.ci.is_infinite() {
+                    "warmup".to_string()
+                } else {
+                    format!("{:>6.2}", stats.ci)
+                };
+
                 println!(
-                    "Iteration {:>8} | CI: {:>6.2} | Info sets: {:>8} | Speed: {:>6.0} it/s | Elapsed: {}{}",
+                    "Iteration {:>8} | CI: {} | Info sets: {:>8} | Speed: {:>6.0} it/s | Elapsed: {}{}",
                     stats.iteration,
-                    stats.ci,
+                    ci_str,
                     stats.info_sets,
                     stats.iterations_per_second,
                     format_duration(stats.elapsed_seconds),

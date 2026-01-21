@@ -222,24 +222,40 @@ impl<G: Game> CFRSolver<G> {
         let start_time = Instant::now();
         let mut snapshot: Option<StrategySnapshot> = None;
         let mut current_ci = f64::INFINITY;
-        let mut iterations_since_snapshot = 0u64;
 
-        // Minimum iterations before first CI check (need some data first)
-        let warmup_iterations = ci_check_interval.max(100);
+        // Minimum iterations before first CI check (need enough data to be meaningful)
+        // CI can be misleadingly low early on when info sets haven't been visited enough
+        let warmup_iterations = ci_check_interval.max(1000);
 
         loop {
             // Run a batch of iterations
             for _ in 0..ci_check_interval {
                 self.run_iteration();
-                iterations_since_snapshot += 1;
             }
+
+            let elapsed = start_time.elapsed().as_secs_f64();
+            let iters_per_sec = if elapsed > 0.0 {
+                self.iteration as f64 / elapsed
+            } else {
+                0.0
+            };
 
             // Check convergence after warmup
             if self.iteration >= warmup_iterations {
                 // Take snapshot if we don't have one
                 if snapshot.is_none() {
                     snapshot = Some(self.storage.snapshot_strategies());
-                    iterations_since_snapshot = 0;
+                    // Still report progress (CI will show as infinity/warming)
+                    let conv_stats = ConvergenceStats {
+                        iteration: self.iteration,
+                        ci: current_ci,
+                        info_sets: self.storage.num_info_sets(),
+                        elapsed_seconds: elapsed,
+                        iterations_per_second: iters_per_sec,
+                    };
+                    if let Some(ref mut cb) = callback {
+                        cb(&conv_stats);
+                    }
                     continue;
                 }
 
@@ -251,27 +267,40 @@ impl<G: Game> CFRSolver<G> {
                     iteration: self.iteration,
                     ci: current_ci,
                     info_sets: self.storage.num_info_sets(),
-                    elapsed_seconds: start_time.elapsed().as_secs_f64(),
-                    iterations_per_second: self.iteration as f64 / start_time.elapsed().as_secs_f64(),
+                    elapsed_seconds: elapsed,
+                    iterations_per_second: iters_per_sec,
                 };
 
                 if let Some(ref mut cb) = callback {
                     cb(&conv_stats);
                 }
 
-                // Check if converged
-                if current_ci <= ci_target {
+                // Check if converged (require minimum iterations to avoid false convergence)
+                // CI can be misleadingly low early when strategies haven't been visited enough
+                let min_iterations_for_convergence = 5000u64;
+                if current_ci <= ci_target && self.iteration >= min_iterations_for_convergence {
                     return ConvergenceResult {
                         converged: true,
                         final_ci: current_ci,
                         iterations: self.iteration,
-                        elapsed_seconds: start_time.elapsed().as_secs_f64(),
+                        elapsed_seconds: elapsed,
                     };
                 }
 
                 // Take new snapshot for next CI measurement
                 snapshot = Some(self.storage.snapshot_strategies());
-                iterations_since_snapshot = 0;
+            } else {
+                // During warmup, still report progress
+                let conv_stats = ConvergenceStats {
+                    iteration: self.iteration,
+                    ci: current_ci, // Will be infinity during warmup
+                    info_sets: self.storage.num_info_sets(),
+                    elapsed_seconds: elapsed,
+                    iterations_per_second: iters_per_sec,
+                };
+                if let Some(ref mut cb) = callback {
+                    cb(&conv_stats);
+                }
             }
 
             // Check max iterations
