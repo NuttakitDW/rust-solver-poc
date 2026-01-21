@@ -192,6 +192,113 @@ impl<G: Game> CFRSolver<G> {
         &self.stats
     }
 
+    /// Train until the Convergence Indicator (CI) reaches the target value.
+    ///
+    /// CI measures how much strategies have changed during recent iterations.
+    /// Lower CI means better convergence:
+    /// - CI < 10: bare minimum for a usable solution
+    /// - CI ~ 1: close to fully converged (Nash equilibrium)
+    ///
+    /// # Arguments
+    /// * `ci_target` - Target CI value to reach (e.g., 10.0 for minimum, 1.0 for full)
+    /// * `ci_check_interval` - How many iterations between CI checks
+    /// * `max_iterations` - Maximum iterations before giving up (0 = no limit)
+    /// * `callback` - Optional callback for progress updates
+    ///
+    /// # Returns
+    /// Final CI value achieved
+    pub fn train_until_converged<F>(
+        &mut self,
+        ci_target: f64,
+        ci_check_interval: u64,
+        max_iterations: u64,
+        mut callback: Option<F>,
+    ) -> ConvergenceResult
+    where
+        F: FnMut(&ConvergenceStats),
+    {
+        use crate::cfr::storage::StrategySnapshot;
+
+        let start_time = Instant::now();
+        let mut snapshot: Option<StrategySnapshot> = None;
+        let mut current_ci = f64::INFINITY;
+        let mut iterations_since_snapshot = 0u64;
+
+        // Minimum iterations before first CI check (need some data first)
+        let warmup_iterations = ci_check_interval.max(100);
+
+        loop {
+            // Run a batch of iterations
+            for _ in 0..ci_check_interval {
+                self.run_iteration();
+                iterations_since_snapshot += 1;
+            }
+
+            // Check convergence after warmup
+            if self.iteration >= warmup_iterations {
+                // Take snapshot if we don't have one
+                if snapshot.is_none() {
+                    snapshot = Some(self.storage.snapshot_strategies());
+                    iterations_since_snapshot = 0;
+                    continue;
+                }
+
+                // Calculate CI
+                current_ci = self.storage.calculate_ci(snapshot.as_ref().unwrap());
+
+                // Update stats and callback
+                let conv_stats = ConvergenceStats {
+                    iteration: self.iteration,
+                    ci: current_ci,
+                    info_sets: self.storage.num_info_sets(),
+                    elapsed_seconds: start_time.elapsed().as_secs_f64(),
+                    iterations_per_second: self.iteration as f64 / start_time.elapsed().as_secs_f64(),
+                };
+
+                if let Some(ref mut cb) = callback {
+                    cb(&conv_stats);
+                }
+
+                // Check if converged
+                if current_ci <= ci_target {
+                    return ConvergenceResult {
+                        converged: true,
+                        final_ci: current_ci,
+                        iterations: self.iteration,
+                        elapsed_seconds: start_time.elapsed().as_secs_f64(),
+                    };
+                }
+
+                // Take new snapshot for next CI measurement
+                snapshot = Some(self.storage.snapshot_strategies());
+                iterations_since_snapshot = 0;
+            }
+
+            // Check max iterations
+            if max_iterations > 0 && self.iteration >= max_iterations {
+                return ConvergenceResult {
+                    converged: false,
+                    final_ci: current_ci,
+                    iterations: self.iteration,
+                    elapsed_seconds: start_time.elapsed().as_secs_f64(),
+                };
+            }
+        }
+    }
+
+    /// Get current CI (Convergence Indicator) compared to a snapshot.
+    ///
+    /// Use `snapshot_strategies()` to take a snapshot, then call this after
+    /// more iterations to measure convergence.
+    pub fn calculate_ci(&self, snapshot: &crate::cfr::storage::StrategySnapshot) -> f64 {
+        self.storage.calculate_ci(snapshot)
+    }
+
+    /// Take a snapshot of current average strategies for CI calculation.
+    pub fn snapshot_strategies(&self) -> crate::cfr::storage::StrategySnapshot {
+        self.storage.snapshot_strategies()
+    }
+
     /// Core MCCFR traversal function.
     ///
     /// This recursively traverses the game tree, computing counterfactual values
@@ -536,4 +643,32 @@ impl<G: Game> Clone for CFRSolver<G> {
             _phantom: PhantomData,
         }
     }
+}
+
+/// Statistics during convergence-based training.
+#[derive(Debug, Clone)]
+pub struct ConvergenceStats {
+    /// Current iteration count.
+    pub iteration: u64,
+    /// Current Convergence Indicator value.
+    pub ci: f64,
+    /// Number of information sets discovered.
+    pub info_sets: usize,
+    /// Elapsed time in seconds.
+    pub elapsed_seconds: f64,
+    /// Current solve speed.
+    pub iterations_per_second: f64,
+}
+
+/// Result of convergence-based training.
+#[derive(Debug, Clone)]
+pub struct ConvergenceResult {
+    /// Whether the target CI was reached.
+    pub converged: bool,
+    /// Final CI value achieved.
+    pub final_ci: f64,
+    /// Total iterations run.
+    pub iterations: u64,
+    /// Total elapsed time in seconds.
+    pub elapsed_seconds: f64,
 }

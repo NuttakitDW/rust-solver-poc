@@ -297,6 +297,92 @@ pub struct StorageExport {
     pub strategy_sums: FxHashMap<String, Vec<f64>>,
 }
 
+/// Snapshot of average strategies for CI calculation.
+#[derive(Debug, Clone, Default)]
+pub struct StrategySnapshot {
+    /// Average strategies: info_key -> [probability per action]
+    pub strategies: FxHashMap<String, Vec<f64>>,
+}
+
+impl RegretStorage {
+    /// Create a snapshot of all current average strategies.
+    ///
+    /// Used for calculating Convergence Indicator (CI).
+    pub fn snapshot_strategies(&self) -> StrategySnapshot {
+        let strategy_sums = self.strategy_sums.read().unwrap();
+        let action_counts = self.action_counts.read().unwrap();
+
+        let mut strategies = FxHashMap::default();
+
+        for (key, sums) in strategy_sums.iter() {
+            let num_actions = action_counts.get(key).copied().unwrap_or(sums.len());
+            let total: f64 = sums.iter().sum();
+
+            let avg_strategy = if total > 0.0 {
+                sums.iter().map(|&x| x / total).collect()
+            } else {
+                vec![1.0 / num_actions as f64; num_actions]
+            };
+
+            strategies.insert(key.clone(), avg_strategy);
+        }
+
+        StrategySnapshot { strategies }
+    }
+
+    /// Calculate Convergence Indicator (CI) by comparing current strategies to a snapshot.
+    ///
+    /// CI measures how much strategies have changed since the snapshot.
+    /// Lower CI means better convergence (CI ~ 1 is close to fully converged).
+    ///
+    /// Formula: CI = 100 * average(sum of |new_prob - old_prob| for each action)
+    ///
+    /// # Arguments
+    /// * `snapshot` - Previous strategy snapshot to compare against
+    ///
+    /// # Returns
+    /// The CI value (lower is better, < 10 is bare minimum, ~ 1 is converged)
+    pub fn calculate_ci(&self, snapshot: &StrategySnapshot) -> f64 {
+        let strategy_sums = self.strategy_sums.read().unwrap();
+        let action_counts = self.action_counts.read().unwrap();
+
+        let mut total_change = 0.0;
+        let mut num_info_sets = 0;
+
+        for (key, sums) in strategy_sums.iter() {
+            let num_actions = action_counts.get(key).copied().unwrap_or(sums.len());
+            let total: f64 = sums.iter().sum();
+
+            let new_strategy: Vec<f64> = if total > 0.0 {
+                sums.iter().map(|&x| x / total).collect()
+            } else {
+                vec![1.0 / num_actions as f64; num_actions]
+            };
+
+            // Compare with snapshot
+            if let Some(old_strategy) = snapshot.strategies.get(key) {
+                let change: f64 = new_strategy
+                    .iter()
+                    .zip(old_strategy.iter())
+                    .map(|(&new, &old)| (new - old).abs())
+                    .sum();
+
+                total_change += change;
+                num_info_sets += 1;
+            }
+        }
+
+        if num_info_sets == 0 {
+            return f64::INFINITY; // No comparison possible
+        }
+
+        // CI = 100 * average change per info set
+        // Each info set contributes sum of |delta| which is at most 2.0
+        // So we scale by 100 to get a nicer range
+        100.0 * total_change / num_info_sets as f64
+    }
+}
+
 impl Clone for RegretStorage {
     fn clone(&self) -> Self {
         Self {

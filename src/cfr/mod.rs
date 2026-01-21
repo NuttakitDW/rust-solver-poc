@@ -81,5 +81,5 @@ pub mod storage;
 // Re-export main types for convenient access
 pub use config::{CFRConfig, CFRStats, ConfigError, ExploitabilityPoint};
 pub use game::{Action, Game, GameState, InfoState};
-pub use solver::{CFRSolver, SolverState};
-pub use storage::{RegretStorage, StorageExport};
+pub use solver::{CFRSolver, ConvergenceResult, ConvergenceStats, SolverState};
+pub use storage::{RegretStorage, StorageExport, StrategySnapshot};
