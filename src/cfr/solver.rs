@@ -382,6 +382,12 @@ impl<G: Game> CFRSolver<G> {
         self.storage
             .update_regrets(info_key, &regret_updates, self.config.use_cfr_plus);
 
+        // Store action names (only stored once per info set)
+        let action_names: Vec<String> = actions.iter()
+            .map(|a| self.game.action_name(a))
+            .collect();
+        self.storage.set_action_names(info_key, action_names);
+
         // Update strategy sum for average strategy computation
         let weight = if self.config.use_linear_cfr {
             reach_probs[traverser] * self.iteration as f64
@@ -486,6 +492,11 @@ impl<G: Game> CFRSolver<G> {
     /// Get all information set keys discovered during training.
     pub fn info_set_keys(&self) -> Vec<String> {
         self.storage.regrets().keys().cloned().collect()
+    }
+
+    /// Get action names for an information set.
+    pub fn get_action_names(&self, info_key: &str) -> Option<Vec<String>> {
+        self.storage.get_action_names(info_key)
     }
 
     /// Calculate exploitability of current strategy.

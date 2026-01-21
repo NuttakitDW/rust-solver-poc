@@ -114,8 +114,12 @@ impl SolverOutput {
         let street = header.get(s_pos + 1..b_pos)?.parse::<u8>().ok()?;
         let bucket = header.get(b_pos + 1..)?.parse::<u16>().ok()?;
 
-        // Get strategy from solver (we don't know exact num_actions, try common values)
-        let strategy = solver.get_average_strategy(key, 10);
+        // Get action names from solver (stored during training)
+        let stored_actions = solver.get_action_names(key);
+        let num_actions = stored_actions.as_ref().map(|a| a.len()).unwrap_or(10);
+
+        // Get strategy from solver
+        let strategy = solver.get_average_strategy(key, num_actions);
 
         // Remove trailing zeros
         let mut strategy: Vec<f64> = strategy.into_iter()
@@ -128,10 +132,13 @@ impl SolverOutput {
             return None;
         }
 
-        // Generate action names (simplified)
-        let actions: Vec<String> = (0..strategy.len())
-            .map(|i| format!("action_{}", i))
-            .collect();
+        // Use stored action names, or fall back to generic names
+        let actions: Vec<String> = match stored_actions {
+            Some(names) => names.into_iter().take(strategy.len()).collect(),
+            None => (0..strategy.len())
+                .map(|i| format!("action_{}", i))
+                .collect(),
+        };
 
         Some(StrategyEntry {
             info_key: key.to_string(),

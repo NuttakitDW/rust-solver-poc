@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Strategy Visualizer</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        label {
+            color: #aaa;
+            font-size: 14px;
+        }
+
+        select, input[type="text"] {
+            background: #2a2a4a;
+            color: #fff;
+            border: 1px solid #4a4a6a;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background: #4a4a6a;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .btn:hover {
+            background: #5a5a8a;
+        }
+
+        .btn.active {
+            background: #007bff;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Preflop Chart Styles */
+        .chart-container {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            flex-wrap: wrap;
+        }
+
+        .chart-wrapper {
+            background: #252540;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .chart-title {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 18px;
+            color: #fff;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(13, 1fr);
+            gap: 2px;
+            width: fit-content;
+        }
+
+        .cell {
+            width: 45px;
+            height: 45px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s;
+            position: relative;
+        }
+
+        .cell:hover {
+            transform: scale(1.15);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            z-index: 10;
+        }
+
+        .cell .hand-label {
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        /* Postflop Styles */
+        .postflop-container {
+            display: none;
+        }
+
+        .postflop-container.active {
+            display: block;
+        }
+
+        .preflop-container.active {
+            display: flex;
+        }
+
+        .metadata-panel {
+            background: #252540;
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .metadata-item {
+            text-align: center;
+        }
+
+        .metadata-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .metadata-label {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .strategy-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 15px;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .strategy-card {
+            background: #252540;
+            border-radius: 10px;
+            padding: 15px;
+            transition: transform 0.2s;
+        }
+
+        .strategy-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .strategy-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #3a3a5a;
+        }
+
+        .strategy-info {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .strategy-info .position {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .strategy-info .position.p0 {
+            background: #2d4a2d;
+            color: #8f8;
+        }
+
+        .strategy-info .position.p1 {
+            background: #4a2d2d;
+            color: #f88;
+        }
+
+        .strategy-info .street {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            background: #3a3a5a;
+            margin-right: 8px;
+        }
+
+        .strategy-info .bucket {
+            color: #aaa;
+        }
+
+        .history-line {
+            font-family: monospace;
+            font-size: 13px;
+            color: #7af;
+            margin-bottom: 12px;
+            word-break: break-all;
+        }
+
+        .action-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .action-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .action-name {
+            width: 80px;
+            font-size: 12px;
+            color: #aaa;
+            text-align: right;
+        }
+
+        .bar-container {
+            flex: 1;
+            height: 20px;
+            background: #1a1a2e;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            padding-left: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .bar-fill.fold { background: linear-gradient(90deg, #dc3545, #c82333); }
+        .bar-fill.check { background: linear-gradient(90deg, #6c757d, #5a6268); }
+        .bar-fill.call { background: linear-gradient(90deg, #28a745, #218838); }
+        .bar-fill.bet { background: linear-gradient(90deg, #17a2b8, #138496); }
+        .bar-fill.raise { background: linear-gradient(90deg, #007bff, #0056b3); }
+        .bar-fill.allin { background: linear-gradient(90deg, #fd7e14, #e96b02); }
+
+        .tooltip {
+            position: fixed;
+            background: #2a2a4a;
+            border: 1px solid #4a4a6a;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 13px;
+            pointer-events: none;
+            z-index: 1000;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            display: none;
+            min-width: 200px;
+        }
+
+        .tooltip.visible {
+            display: block;
+        }
+
+        .tooltip-hand {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #fff;
+        }
+
+        .tooltip-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 4px 0;
+        }
+
+        .tooltip-action {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tooltip-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 4px;
+        }
+
+        .stats {
+            text-align: center;
+            margin-top: 20px;
+            color: #888;
+        }
+
+        .stats span {
+            margin: 0 15px;
+        }
+
+        .info-panel {
+            background: #252540;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .info-panel h3 {
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .info-panel p {
+            color: #aaa;
+            line-height: 1.6;
+        }
+
+        .drop-zone {
+            border: 2px dashed #4a4a6a;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 20px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .drop-zone.dragover {
+            border-color: #7a7aaa;
+            background: rgba(74, 74, 106, 0.2);
+        }
+
+        .drop-zone p {
+            color: #888;
+            margin-bottom: 15px;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .format-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .format-badge.preflop {
+            background: #28a745;
+            color: #fff;
+        }
+
+        .format-badge.postflop {
+            background: #007bff;
+            color: #fff;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #1a1a2e;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4a4a6a;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #5a5a8a;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🃏 Poker Strategy Visualizer <span class="format-badge" id="formatBadge"></span></h1>
+        <p class="subtitle">Interactive strategy chart viewer</p>
+
+        <div class="drop-zone" id="dropZone">
+            <p>Drag & drop your solution JSON file here, or</p>
+            <label class="btn">
+                Choose File
+                <input type="file" id="fileInput" accept=".json">
+            </label>
+        </div>
+
+        <!-- Preflop Controls -->
+        <div class="controls preflop-controls" style="display:none">
+            <div class="control-group">
+                <label>Position:</label>
+                <select id="positionSelect" class="btn">
+                    <option value="">All</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Postflop Controls -->
+        <div class="controls postflop-controls" style="display:none">
+            <div class="control-group">
+                <label>Player:</label>
+                <select id="playerFilter">
+                    <option value="">All</option>
+                    <option value="0">P0 (IP/SB)</option>
+                    <option value="1">P1 (OOP/BB)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Street:</label>
+                <select id="streetFilter">
+                    <option value="">All</option>
+                    <option value="1">Flop</option>
+                    <option value="2">Turn</option>
+                    <option value="3">River</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Bucket:</label>
+                <select id="bucketFilter">
+                    <option value="">All</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Search:</label>
+                <input type="text" id="historySearch" placeholder="Filter by history...">
+            </div>
+        </div>
+
+        <!-- Postflop Metadata -->
+        <div class="metadata-panel" id="metadataPanel" style="display:none">
+            <div class="metadata-item">
+                <div class="metadata-value" id="metaConfig">-</div>
+                <div class="metadata-label">Config</div>
+            </div>
+            <div class="metadata-item">
+                <div class="metadata-value" id="metaStack">-</div>
+                <div class="metadata-label">Stack (BB)</div>
+            </div>
+            <div class="metadata-item">
+                <div class="metadata-value" id="metaIterations">-</div>
+                <div class="metadata-label">Iterations</div>
+            </div>
+            <div class="metadata-item">
+                <div class="metadata-value" id="metaInfoSets">-</div>
+                <div class="metadata-label">Info Sets</div>
+            </div>
+        </div>
+
+        <!-- Preflop Chart -->
+        <div class="chart-container preflop-container" id="chartContainer">
+        </div>
+
+        <!-- Postflop List -->
+        <div class="postflop-container" id="postflopContainer">
+            <div class="strategy-list" id="strategyList">
+            </div>
+        </div>
+
+        <div class="legend" id="legend"></div>
+        <div class="stats" id="stats"></div>
+
+        <div class="tooltip" id="tooltip"></div>
+
+        <div class="info-panel">
+            <h3>Supported Formats</h3>
+            <p>
+                <strong>Preflop (solutions_example.json):</strong> 13×13 hand matrix with action frequencies per hand combo.<br><br>
+                <strong>Postflop (solution.json):</strong> Game tree with bucket-based strategies.<br>
+                • <strong>P0/P1</strong> = Player position<br>
+                • <strong>S1/S2/S3</strong> = Flop/Turn/River<br>
+                • <strong>B{n}</strong> = Hand strength bucket<br>
+                • <strong>Actions:</strong> X=Check, B=Bet, R=Raise, C=Call, A=All-in
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Hand matrix labels
+        const RANKS = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+
+        function getHandLabel(row, col) {
+            if (row === col) return RANKS[row] + RANKS[col];
+            else if (col > row) return RANKS[row] + RANKS[col] + 's';
+            else return RANKS[col] + RANKS[row] + 'o';
+        }
+
+        function getIndex(row, col) {
+            return row * 13 + col;
+        }
+
+        const ACTION_COLORS = {
+            'FOLD': '#dc3545',
+            'CALL': '#28a745',
+            'RAISE': '#007bff',
+            'ALLIN': '#fd7e14',
+            'CHECK': '#6c757d',
+            'BET': '#17a2b8'
+        };
+
+        function getActionColor(actionType) {
+            const type = actionType.toUpperCase();
+            for (const [key, color] of Object.entries(ACTION_COLORS)) {
+                if (type.includes(key)) return color;
+            }
+            return '#6c757d';
+        }
+
+        function blendColors(actions) {
+            if (actions.length === 0) return '#333';
+            if (actions.length === 1) return getActionColor(actions[0].type);
+
+            let r = 0, g = 0, b = 0;
+            let totalWeight = 0;
+
+            actions.forEach(action => {
+                const color = getActionColor(action.type);
+                const freq = action.frequency;
+                const rgb = hexToRgb(color);
+                r += rgb.r * freq;
+                g += rgb.g * freq;
+                b += rgb.b * freq;
+                totalWeight += freq;
+            });
+
+            if (totalWeight === 0) return '#333';
+            r = Math.round(r / totalWeight);
+            g = Math.round(g / totalWeight);
+            b = Math.round(b / totalWeight);
+
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+
+        let currentData = null;
+        let currentFormat = null;
+        let tooltip = document.getElementById('tooltip');
+
+        // Detect format
+        function detectFormat(data) {
+            if (data.action_solutions) return 'preflop';
+            if (data.strategies && data.metadata) return 'postflop';
+            return null;
+        }
+
+        // Parse preflop solution
+        function parsePreflopSolution(data) {
+            const actions = data.action_solutions || [];
+            const positions = new Set();
+
+            actions.forEach(a => {
+                if (a.action && a.action.position) {
+                    positions.add(a.action.position);
+                }
+            });
+
+            const handData = {};
+            for (let row = 0; row < 13; row++) {
+                for (let col = 0; col < 13; col++) {
+                    const hand = getHandLabel(row, col);
+                    const idx = getIndex(row, col);
+                    handData[hand] = { actions: [], row, col };
+
+                    actions.forEach(actionSol => {
+                        const freq = actionSol.strategy[idx] || 0;
+                        if (freq > 0) {
+                            handData[hand].actions.push({
+                                type: actionSol.action.type,
+                                displayName: actionSol.action.display_name,
+                                betsize: actionSol.action.betsize,
+                                frequency: freq,
+                                ev: actionSol.evs ? actionSol.evs[idx] : 0
+                            });
+                        }
+                    });
+                }
+            }
+
+            return { actions, positions: Array.from(positions), handData };
+        }
+
+        // Parse postflop solution
+        function parsePostflopSolution(data) {
+            const metadata = data.metadata || {};
+            const strategies = data.strategies || {};
+            const buckets = new Set();
+
+            const parsed = Object.values(strategies).map(s => {
+                buckets.add(s.bucket);
+                return {
+                    infoKey: s.info_key,
+                    position: s.position,
+                    street: s.street,
+                    bucket: s.bucket,
+                    history: s.history,
+                    actions: s.actions,
+                    strategy: s.strategy
+                };
+            });
+
+            // Sort by street, then position, then bucket
+            parsed.sort((a, b) => {
+                if (a.street !== b.street) return a.street - b.street;
+                if (a.position !== b.position) return a.position - b.position;
+                return a.bucket - b.bucket;
+            });
+
+            return {
+                metadata,
+                strategies: parsed,
+                buckets: Array.from(buckets).sort((a, b) => a - b)
+            };
+        }
+
+        // Render preflop chart
+        function renderPreflopChart(parsed) {
+            document.querySelector('.preflop-controls').style.display = 'flex';
+            document.querySelector('.postflop-controls').style.display = 'none';
+            document.getElementById('metadataPanel').style.display = 'none';
+            document.getElementById('chartContainer').classList.add('active');
+            document.getElementById('postflopContainer').classList.remove('active');
+
+            const container = document.getElementById('chartContainer');
+            container.innerHTML = '';
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'chart-wrapper';
+
+            const title = document.createElement('div');
+            title.className = 'chart-title';
+            const position = parsed.actions[0]?.action?.position || 'Unknown';
+            title.textContent = `${position} Range`;
+            wrapper.appendChild(title);
+
+            const grid = document.createElement('div');
+            grid.className = 'grid';
+
+            for (let row = 0; row < 13; row++) {
+                for (let col = 0; col < 13; col++) {
+                    const hand = getHandLabel(row, col);
+                    const data = parsed.handData[hand];
+
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+
+                    const bgColor = blendColors(data.actions);
+                    cell.style.backgroundColor = bgColor;
+
+                    const rgb = hexToRgb(bgColor.replace('rgb(', '').replace(')', ''));
+                    const brightness = (rgb.r * 299 + rgb.g * 587 + rgb.b * 114) / 1000;
+                    cell.style.color = brightness > 128 ? '#000' : '#fff';
+
+                    const label = document.createElement('span');
+                    label.className = 'hand-label';
+                    label.textContent = hand;
+                    cell.appendChild(label);
+
+                    cell.addEventListener('mouseenter', (e) => showPreflopTooltip(e, hand, data));
+                    cell.addEventListener('mousemove', moveTooltip);
+                    cell.addEventListener('mouseleave', hideTooltip);
+
+                    grid.appendChild(cell);
+                }
+            }
+
+            wrapper.appendChild(grid);
+            container.appendChild(wrapper);
+
+            renderPreflopLegend(parsed.actions);
+            renderPreflopStats(parsed);
+        }
+
+        function renderPreflopLegend(actions) {
+            const legend = document.getElementById('legend');
+            legend.innerHTML = '';
+
+            const actionTypes = {};
+            actions.forEach(a => {
+                const type = a.action.type;
+                if (!actionTypes[type]) {
+                    actionTypes[type] = { displayName: a.action.display_name, totalFreq: a.total_frequency };
+                }
+            });
+
+            for (const [type, info] of Object.entries(actionTypes)) {
+                const item = document.createElement('div');
+                item.className = 'legend-item';
+
+                const color = document.createElement('div');
+                color.className = 'legend-color';
+                color.style.backgroundColor = getActionColor(type);
+
+                const label = document.createElement('span');
+                label.textContent = `${info.displayName} (${(info.totalFreq * 100).toFixed(1)}%)`;
+
+                item.appendChild(color);
+                item.appendChild(label);
+                legend.appendChild(item);
+            }
+        }
+
+        function renderPreflopStats(parsed) {
+            const stats = document.getElementById('stats');
+            const totalHands = Object.keys(parsed.handData).length;
+            const raisingHands = Object.values(parsed.handData).filter(h =>
+                h.actions.some(a => a.type === 'RAISE' && a.frequency > 0)
+            ).length;
+
+            stats.innerHTML = `
+                <span>Total hands: ${totalHands}</span>
+                <span>Raising range: ${raisingHands} hands (${(raisingHands/totalHands*100).toFixed(1)}%)</span>
+            `;
+        }
+
+        function showPreflopTooltip(e, hand, data) {
+            let html = `<div class="tooltip-hand">${hand}</div>`;
+
+            if (data.actions.length === 0) {
+                html += '<div style="color:#888">No data</div>';
+            } else {
+                data.actions.sort((a, b) => b.frequency - a.frequency);
+                data.actions.forEach(action => {
+                    html += `
+                        <div class="tooltip-row">
+                            <div class="tooltip-action">
+                                <div class="tooltip-color" style="background:${getActionColor(action.type)}"></div>
+                                <span>${action.displayName}${action.betsize !== '0' ? ' ' + action.betsize + 'bb' : ''}</span>
+                            </div>
+                            <span>${(action.frequency * 100).toFixed(1)}%</span>
+                        </div>
+                    `;
+                });
+            }
+
+            tooltip.innerHTML = html;
+            tooltip.classList.add('visible');
+            moveTooltip(e);
+        }
+
+        // Render postflop strategies
+        function renderPostflopStrategies(parsed) {
+            document.querySelector('.preflop-controls').style.display = 'none';
+            document.querySelector('.postflop-controls').style.display = 'flex';
+            document.getElementById('metadataPanel').style.display = 'flex';
+            document.getElementById('chartContainer').classList.remove('active');
+            document.getElementById('postflopContainer').classList.add('active');
+
+            // Update metadata
+            document.getElementById('metaConfig').textContent = parsed.metadata.config_name || '-';
+            document.getElementById('metaStack').textContent = parsed.metadata.stack_bb || '-';
+            document.getElementById('metaIterations').textContent = parsed.metadata.iterations?.toLocaleString() || '-';
+            document.getElementById('metaInfoSets').textContent = parsed.metadata.num_info_sets?.toLocaleString() || '-';
+
+            // Populate bucket filter
+            const bucketFilter = document.getElementById('bucketFilter');
+            bucketFilter.innerHTML = '<option value="">All</option>';
+            parsed.buckets.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b;
+                opt.textContent = `Bucket ${b}`;
+                bucketFilter.appendChild(opt);
+            });
+
+            renderFilteredStrategies(parsed);
+
+            // Add filter listeners
+            ['playerFilter', 'streetFilter', 'bucketFilter', 'historySearch'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => renderFilteredStrategies(parsed));
+            });
+
+            document.getElementById('legend').innerHTML = '';
+            document.getElementById('stats').innerHTML = `<span>Total info sets: ${parsed.strategies.length}</span>`;
+        }
+
+        function renderFilteredStrategies(parsed) {
+            const playerFilter = document.getElementById('playerFilter').value;
+            const streetFilter = document.getElementById('streetFilter').value;
+            const bucketFilter = document.getElementById('bucketFilter').value;
+            const historySearch = document.getElementById('historySearch').value.toLowerCase();
+
+            let filtered = parsed.strategies.filter(s => {
+                if (playerFilter && s.position !== parseInt(playerFilter)) return false;
+                if (streetFilter && s.street !== parseInt(streetFilter)) return false;
+                if (bucketFilter && s.bucket !== parseInt(bucketFilter)) return false;
+                if (historySearch && !s.history.toLowerCase().includes(historySearch)) return false;
+                return true;
+            });
+
+            const list = document.getElementById('strategyList');
+            list.innerHTML = '';
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="no-results">No strategies match the current filters</div>';
+                return;
+            }
+
+            // Limit display for performance
+            const displayLimit = 200;
+            const displayed = filtered.slice(0, displayLimit);
+
+            displayed.forEach(strategy => {
+                const card = document.createElement('div');
+                card.className = 'strategy-card';
+
+                const streetNames = { 1: 'Flop', 2: 'Turn', 3: 'River' };
+
+                card.innerHTML = `
+                    <div class="strategy-header">
+                        <div class="strategy-info">
+                            <span class="position p${strategy.position}">P${strategy.position}</span>
+                            <span class="street">${streetNames[strategy.street] || 'S' + strategy.street}</span>
+                            <span class="bucket">Bucket ${strategy.bucket}</span>
+                        </div>
+                    </div>
+                    <div class="history-line">${formatHistory(strategy.history)}</div>
+                    <div class="action-bars">
+                        ${strategy.actions.map((action, i) => {
+                            const prob = strategy.strategy[i] * 100;
+                            const actionType = parseActionType(action);
+                            return `
+                                <div class="action-bar">
+                                    <span class="action-name">${formatActionName(action)}</span>
+                                    <div class="bar-container">
+                                        <div class="bar-fill ${actionType}" style="width: ${prob}%">
+                                            ${prob >= 5 ? prob.toFixed(1) + '%' : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+
+                list.appendChild(card);
+            });
+
+            if (filtered.length > displayLimit) {
+                const notice = document.createElement('div');
+                notice.className = 'no-results';
+                notice.textContent = `Showing ${displayLimit} of ${filtered.length} results. Use filters to narrow down.`;
+                list.appendChild(notice);
+            }
+        }
+
+        function formatHistory(history) {
+            return history
+                .replace(/\|/g, ' <span style="color:#555">|</span> ')
+                .replace(/R(\d+)/g, '<span style="color:#007bff">R$1</span>')
+                .replace(/B(\d+)/g, '<span style="color:#17a2b8">B$1</span>')
+                .replace(/C(?![a-z])/g, '<span style="color:#28a745">C</span>')
+                .replace(/X/g, '<span style="color:#6c757d">X</span>')
+                .replace(/A(?![a-z])/g, '<span style="color:#fd7e14">A</span>');
+        }
+
+        function parseActionType(action) {
+            const lower = action.toLowerCase();
+            if (lower.includes('fold')) return 'fold';
+            if (lower.includes('check')) return 'check';
+            if (lower.includes('call')) return 'call';
+            if (lower.includes('all-in') || lower.includes('allin')) return 'allin';
+            if (lower.includes('raise')) return 'raise';
+            if (lower.includes('bet')) return 'bet';
+            return 'bet';
+        }
+
+        function formatActionName(action) {
+            return action;
+        }
+
+        function moveTooltip(e) {
+            const x = e.clientX + 15;
+            const y = e.clientY + 15;
+            const rect = tooltip.getBoundingClientRect();
+            const maxX = window.innerWidth - rect.width - 10;
+            const maxY = window.innerHeight - rect.height - 10;
+            tooltip.style.left = Math.min(x, maxX) + 'px';
+            tooltip.style.top = Math.min(y, maxY) + 'px';
+        }
+
+        function hideTooltip() {
+            tooltip.classList.remove('visible');
+        }
+
+        // File handling
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    const format = detectFormat(data);
+
+                    if (!format) {
+                        alert('Unknown file format. Please use a valid solution JSON.');
+                        return;
+                    }
+
+                    currentFormat = format;
+                    const badge = document.getElementById('formatBadge');
+                    badge.textContent = format.charAt(0).toUpperCase() + format.slice(1);
+                    badge.className = `format-badge ${format}`;
+
+                    if (format === 'preflop') {
+                        currentData = parsePreflopSolution(data);
+                        renderPreflopChart(currentData);
+                    } else {
+                        currentData = parsePostflopSolution(data);
+                        renderPostflopStrategies(currentData);
+                    }
+                } catch (err) {
+                    alert('Error parsing JSON: ' + err.message);
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Event listeners
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            if (e.target.files[0]) handleFile(e.target.files[0]);
+        });
+
+        const dropZone = document.getElementById('dropZone');
+
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('dragover');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('dragover');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        });
+
+        // Auto-load example
+        fetch('solutions_example.json')
+            .then(res => res.json())
+            .then(data => {
+                currentFormat = 'preflop';
+                currentData = parsePreflopSolution(data);
+                renderPreflopChart(currentData);
+                const badge = document.getElementById('formatBadge');
+                badge.textContent = 'Preflop';
+                badge.className = 'format-badge preflop';
+            })
+            .catch(() => console.log('No default file found'));
+    </script>
+</body>
+</html>

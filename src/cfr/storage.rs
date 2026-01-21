@@ -25,6 +25,9 @@ pub struct RegretStorage {
 
     /// Action counts for each info set (to verify consistency)
     action_counts: RwLock<FxHashMap<String, usize>>,
+
+    /// Action names for each info set: info_key -> [action name per action]
+    action_names: RwLock<FxHashMap<String, Vec<String>>>,
 }
 
 impl Default for RegretStorage {
@@ -40,6 +43,7 @@ impl RegretStorage {
             regrets: RwLock::new(FxHashMap::default()),
             strategy_sums: RwLock::new(FxHashMap::default()),
             action_counts: RwLock::new(FxHashMap::default()),
+            action_names: RwLock::new(FxHashMap::default()),
         }
     }
 
@@ -55,6 +59,10 @@ impl RegretStorage {
                 Default::default(),
             )),
             action_counts: RwLock::new(FxHashMap::with_capacity_and_hasher(
+                capacity,
+                Default::default(),
+            )),
+            action_names: RwLock::new(FxHashMap::with_capacity_and_hasher(
                 capacity,
                 Default::default(),
             )),
@@ -183,6 +191,33 @@ impl RegretStorage {
         }
     }
 
+    /// Store action names for an info set (only stores if not already present).
+    ///
+    /// # Arguments
+    /// * `info_key` - The information set key
+    /// * `names` - Names for each available action
+    pub fn set_action_names(&self, info_key: &str, names: Vec<String>) {
+        let mut action_names = self.action_names.write().unwrap();
+        action_names.entry(info_key.to_string()).or_insert(names);
+    }
+
+    /// Get action names for an info set.
+    ///
+    /// # Arguments
+    /// * `info_key` - The information set key
+    ///
+    /// # Returns
+    /// Action names if stored, None otherwise
+    pub fn get_action_names(&self, info_key: &str) -> Option<Vec<String>> {
+        let action_names = self.action_names.read().unwrap();
+        action_names.get(info_key).cloned()
+    }
+
+    /// Get read access to action names map.
+    pub fn action_names(&self) -> RwLockReadGuard<'_, FxHashMap<String, Vec<String>>> {
+        self.action_names.read().unwrap()
+    }
+
     /// Apply discount to all regrets (for Discounted CFR).
     ///
     /// # Arguments
@@ -246,6 +281,7 @@ impl RegretStorage {
         self.regrets.write().unwrap().clear();
         self.strategy_sums.write().unwrap().clear();
         self.action_counts.write().unwrap().clear();
+        self.action_names.write().unwrap().clear();
     }
 
     /// Get total memory usage estimate in bytes.
@@ -271,6 +307,7 @@ impl RegretStorage {
         StorageExport {
             regrets: self.regrets.read().unwrap().clone(),
             strategy_sums: self.strategy_sums.read().unwrap().clone(),
+            action_names: self.action_names.read().unwrap().clone(),
         }
     }
 
@@ -278,6 +315,7 @@ impl RegretStorage {
     pub fn import(&self, data: StorageExport) {
         *self.regrets.write().unwrap() = data.regrets;
         *self.strategy_sums.write().unwrap() = data.strategy_sums;
+        *self.action_names.write().unwrap() = data.action_names;
 
         // Rebuild action counts
         let mut action_counts = self.action_counts.write().unwrap();
@@ -295,6 +333,9 @@ pub struct StorageExport {
     pub regrets: FxHashMap<String, Vec<f64>>,
     /// Cumulative strategy sums
     pub strategy_sums: FxHashMap<String, Vec<f64>>,
+    /// Action names for each info set
+    #[serde(default)]
+    pub action_names: FxHashMap<String, Vec<String>>,
 }
 
 /// Snapshot of average strategies for CI calculation.
@@ -389,6 +430,7 @@ impl Clone for RegretStorage {
             regrets: RwLock::new(self.regrets.read().unwrap().clone()),
             strategy_sums: RwLock::new(self.strategy_sums.read().unwrap().clone()),
             action_counts: RwLock::new(self.action_counts.read().unwrap().clone()),
+            action_names: RwLock::new(self.action_names.read().unwrap().clone()),
         }
     }
 }
