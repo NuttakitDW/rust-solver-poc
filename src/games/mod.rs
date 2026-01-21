@@ -27,7 +27,7 @@
 //! See the [`kuhn`] module for a complete example.
 
 pub mod kuhn;
+pub mod preflop;
 
 // Future modules:
 // pub mod pushfold;
-// pub mod preflop;
