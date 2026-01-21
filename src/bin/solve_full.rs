@@ -179,13 +179,23 @@ fn main() {
             ci_check_interval,
             max_iterations,
             Some(|stats: &ConvergenceStats| {
+                // Calculate ETA if max_iterations is set
+                let eta_str = if max_iterations > 0 && stats.iterations_per_second > 0.0 {
+                    let remaining = max_iterations.saturating_sub(stats.iteration);
+                    let eta_seconds = remaining as f64 / stats.iterations_per_second;
+                    format!(" | ETA: {}", format_duration(eta_seconds))
+                } else {
+                    String::new()
+                };
+
                 println!(
-                    "Iteration {:>8} | CI: {:>6.2} | Info sets: {:>8} | Speed: {:>6.0} it/s | Elapsed: {:>6.1}s",
+                    "Iteration {:>8} | CI: {:>6.2} | Info sets: {:>8} | Speed: {:>6.0} it/s | Elapsed: {}{}",
                     stats.iteration,
                     stats.ci,
                     stats.info_sets,
                     stats.iterations_per_second,
-                    stats.elapsed_seconds
+                    format_duration(stats.elapsed_seconds),
+                    eta_str
                 );
             }),
         );
@@ -197,7 +207,7 @@ fn main() {
             println!("Stopped at max iterations. Final CI: {:.2} (target: {:.2})", result.final_ci, ci);
         }
         println!("Total iterations: {}", result.iterations);
-        println!("Total time: {:.2}s", result.elapsed_seconds);
+        println!("Total time: {}", format_duration(result.elapsed_seconds));
 
     } else {
         // Iteration-based mode
@@ -223,13 +233,22 @@ fn main() {
                     snapshot = solver.snapshot_strategies();
                 }
 
+                // Calculate ETA
+                let remaining_iters = iter_count - iter;
+                let eta_seconds = if iters_per_sec > 0.0 {
+                    remaining_iters as f64 / iters_per_sec
+                } else {
+                    0.0
+                };
+
                 println!(
-                    "Iteration {:>8} | CI: {:>6.2} | Info sets: {:>8} | Speed: {:>6.0} it/s | Elapsed: {:>6.1}s",
+                    "Iteration {:>8} | CI: {:>6.2} | Info sets: {:>8} | Speed: {:>6.0} it/s | Elapsed: {} | ETA: {}",
                     iter,
                     if last_ci.is_infinite() { 0.0 } else { last_ci },
                     info_sets,
                     iters_per_sec,
-                    elapsed
+                    format_duration(elapsed),
+                    format_duration(eta_seconds)
                 );
 
                 last_report = iter;
@@ -239,7 +258,7 @@ fn main() {
         let total_time = start_time.elapsed();
         println!();
         println!("Training complete!");
-        println!("Total time: {:.2}s", total_time.as_secs_f64());
+        println!("Total time: {}", format_duration(total_time.as_secs_f64()));
         println!("Final CI: {:.2}", if last_ci.is_infinite() { 0.0 } else { last_ci });
     }
 
@@ -278,6 +297,21 @@ fn main() {
     }
 
     println!("Done!");
+}
+
+/// Format duration in human-readable format
+fn format_duration(seconds: f64) -> String {
+    if seconds < 60.0 {
+        format!("{:>5.1}s", seconds)
+    } else if seconds < 3600.0 {
+        let mins = (seconds / 60.0).floor();
+        let secs = seconds % 60.0;
+        format!("{:>2.0}m {:>4.1}s", mins, secs)
+    } else {
+        let hours = (seconds / 3600.0).floor();
+        let mins = ((seconds % 3600.0) / 60.0).floor();
+        format!("{:>2.0}h {:>2.0}m", hours, mins)
+    }
 }
 
 fn print_help() {
