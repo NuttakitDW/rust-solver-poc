@@ -206,6 +206,83 @@
             display: block;
         }
 
+        /* Action Tree Styles */
+        .action-tree {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+
+        .action-tree-node {
+            background: #252540;
+            border-radius: 8px;
+            padding: 10px;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .action-tree-node .node-header {
+            font-weight: bold;
+            margin-bottom: 8px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid #3a3a5a;
+            color: #fff;
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+
+        .action-tree-node .node-position {
+            color: #8f8;
+        }
+
+        .action-tree-node .node-position.bb {
+            color: #f88;
+        }
+
+        .action-tree-node .node-stack {
+            color: #888;
+        }
+
+        .action-tree-action {
+            padding: 6px 10px;
+            margin: 3px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.15s;
+            background: #1a1a2e;
+            color: #aaa;
+        }
+
+        .action-tree-action:hover {
+            background: #3a3a5a;
+            color: #fff;
+        }
+
+        .action-tree-action.selected {
+            background: #007bff;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .action-tree-action.fold { border-left: 3px solid #007bff; }
+        .action-tree-action.call { border-left: 3px solid #28a745; }
+        .action-tree-action.raise { border-left: 3px solid #dc3545; }
+        .action-tree-action.allin { border-left: 3px solid #fd7e14; }
+        .action-tree-action.check { border-left: 3px solid #6c757d; }
+
+        .action-tree-arrow {
+            display: flex;
+            align-items: center;
+            color: #555;
+            font-size: 20px;
+            padding: 0 5px;
+        }
+
         .metadata-panel {
             background: #252540;
             border-radius: 12px;
@@ -548,6 +625,9 @@
             </div>
         </div>
 
+        <!-- Action Tree (visual scenario selector) -->
+        <div class="action-tree" id="actionTree" style="display:none"></div>
+
         <!-- Postflop Controls -->
         <div class="controls postflop-controls" id="postflopControls" style="display:none">
             <div class="control-group">
@@ -848,7 +928,7 @@
             const title = document.createElement('div');
             title.className = 'chart-title';
             const posName = position === 0 ? 'SB' : 'BB';
-            const scenario = historyFilter === '' ? 'RFI (Open)' : historyFilter;
+            const scenario = formatPreflopScenario(historyFilter);
             title.textContent = `${posName} - ${scenario}`;
             wrapper.appendChild(title);
 
@@ -1054,6 +1134,59 @@
                 .replace(/A(?![a-z])/g, '<span style="color:#fd7e14">A</span>');
         }
 
+        // Convert centiBB to BB display (e.g., 250 -> "2.5bb")
+        function centiBBtoBB(centiBB) {
+            const bb = centiBB / 100;
+            if (bb === Math.floor(bb)) {
+                return bb + 'bb';
+            }
+            return bb.toFixed(1).replace(/\.0$/, '') + 'bb';
+        }
+
+        // Format preflop scenario to human-readable string
+        // Input: "R250-R550-C" (SB raises 2.5bb, BB 3bets to 5.5bb, SB calls)
+        // Output: "SB raise 2.5bb → BB 3bet 5.5bb → SB call"
+        function formatPreflopScenario(history) {
+            if (!history) return 'RFI (Open)';
+
+            // Only look at preflop part (before first |)
+            const preflopPart = history.split('|')[0];
+            if (!preflopPart) return 'RFI (Open)';
+
+            const actions = preflopPart.split('-');
+            const parts = [];
+            let currentPlayer = 'SB'; // SB acts first in heads up
+            let raiseCount = 0;
+
+            for (const action of actions) {
+                if (action === 'C') {
+                    parts.push(`${currentPlayer} call`);
+                } else if (action === 'A') {
+                    parts.push(`${currentPlayer} all-in`);
+                } else if (action.startsWith('R')) {
+                    const chips = parseInt(action.substring(1));
+                    const bbAmount = centiBBtoBB(chips);
+                    raiseCount++;
+
+                    let raiseName;
+                    if (raiseCount === 1) raiseName = 'raise';
+                    else if (raiseCount === 2) raiseName = '3bet';
+                    else if (raiseCount === 3) raiseName = '4bet';
+                    else if (raiseCount === 4) raiseName = '5bet';
+                    else raiseName = `${raiseCount + 1}bet`;
+
+                    parts.push(`${currentPlayer} ${raiseName} ${bbAmount}`);
+                } else if (action === 'X') {
+                    parts.push(`${currentPlayer} check`);
+                }
+
+                // Alternate players
+                currentPlayer = currentPlayer === 'SB' ? 'BB' : 'SB';
+            }
+
+            return parts.join(' → ');
+        }
+
         function parseActionType(action) {
             const lower = action.toLowerCase();
             if (lower.includes('fold')) return 'fold';
@@ -1094,15 +1227,181 @@
             document.getElementById('postflopContainer').classList.toggle('active', !isPreflopGrid);
             document.getElementById('preflopGridControls').style.display = isPreflopGrid ? 'flex' : 'none';
             document.getElementById('postflopControls').style.display = isPreflopGrid ? 'none' : 'flex';
+            document.getElementById('actionTree').style.display = isPreflopGrid ? 'flex' : 'none';
 
             // Re-render
             if (currentData) {
                 if (isPreflopGrid) {
                     renderPreflopGrid(currentData);
+                    renderActionTree(currentData, document.getElementById('preflopScenarioFilter').value);
                 } else {
                     renderPostflopList(currentData);
                 }
             }
+        }
+
+        // Build action tree structure from available scenarios
+        function buildActionTree(scenarios, stackBB) {
+            // Parse all scenarios into a tree structure
+            const tree = { children: {}, isEnd: false };
+
+            scenarios.forEach(scenario => {
+                if (scenario === '') {
+                    tree.isEnd = true;
+                    return;
+                }
+
+                const preflopPart = scenario.split('|')[0];
+                const actions = preflopPart.split('-');
+                let node = tree;
+
+                actions.forEach(action => {
+                    if (!node.children[action]) {
+                        node.children[action] = { children: {}, isEnd: false };
+                    }
+                    node = node.children[action];
+                });
+                node.isEnd = true;
+            });
+
+            return tree;
+        }
+
+        // Render the action tree UI
+        function renderActionTree(parsed, currentHistory) {
+            const container = document.getElementById('actionTree');
+            container.innerHTML = '';
+
+            if (!parsed.preflopScenarios || parsed.preflopScenarios.length <= 1) {
+                container.style.display = 'none';
+                return;
+            }
+
+            container.style.display = 'flex';
+
+            const tree = buildActionTree(parsed.preflopScenarios, parsed.metadata.stack_bb || 50);
+            const historyParts = currentHistory ? currentHistory.split('|')[0].split('-').filter(x => x) : [];
+
+            let currentNode = tree;
+            let currentPath = [];
+            let player = 'SB';
+            let raiseCount = 0;
+
+            // Render each action node in the path
+            function addNode(node, selectedAction, pathSoFar, playerName, rCount) {
+                const nodeDiv = document.createElement('div');
+                nodeDiv.className = 'action-tree-node';
+
+                const header = document.createElement('div');
+                header.className = 'node-header';
+
+                const posSpan = document.createElement('span');
+                posSpan.className = 'node-position' + (playerName === 'BB' ? ' bb' : '');
+                posSpan.textContent = playerName;
+
+                header.appendChild(posSpan);
+                nodeDiv.appendChild(header);
+
+                // Get available actions at this node
+                const availableActions = Object.keys(node.children);
+
+                // Add "Start" or current state indicator
+                if (pathSoFar.length === 0 && node.isEnd) {
+                    const startAction = document.createElement('div');
+                    startAction.className = 'action-tree-action raise' + (selectedAction === null ? ' selected' : '');
+                    startAction.textContent = 'Open';
+                    startAction.addEventListener('click', () => {
+                        document.getElementById('preflopScenarioFilter').value = '';
+                        renderPreflopGrid(currentData);
+                        renderActionTree(currentData, '');
+                    });
+                    nodeDiv.appendChild(startAction);
+                }
+
+                // Sort actions: Raises first (by size), then Call, then Fold
+                availableActions.sort((a, b) => {
+                    const getOrder = (act) => {
+                        if (act === 'A') return 1000000;
+                        if (act.startsWith('R')) return parseInt(act.substring(1));
+                        if (act === 'C') return 2000000;
+                        return 3000000;
+                    };
+                    return getOrder(a) - getOrder(b);
+                });
+
+                availableActions.forEach(action => {
+                    const actionDiv = document.createElement('div');
+                    const isSelected = action === selectedAction;
+
+                    // Determine action type for styling
+                    let actionType = 'raise';
+                    let label = action;
+
+                    if (action === 'C') {
+                        actionType = 'call';
+                        label = 'Call';
+                    } else if (action === 'A') {
+                        actionType = 'allin';
+                        label = 'All-in 50bb';
+                    } else if (action.startsWith('R')) {
+                        const chips = parseInt(action.substring(1));
+                        const bb = (chips / 100).toFixed(1).replace(/\.0$/, '');
+
+                        const localRaiseCount = rCount + 1;
+                        if (localRaiseCount === 1) label = `Raise ${bb}bb`;
+                        else if (localRaiseCount === 2) label = `3bet ${bb}bb`;
+                        else if (localRaiseCount === 3) label = `4bet ${bb}bb`;
+                        else if (localRaiseCount === 4) label = `5bet ${bb}bb`;
+                        else label = `${localRaiseCount + 1}bet ${bb}bb`;
+
+                        actionType = 'raise';
+                    }
+
+                    actionDiv.className = `action-tree-action ${actionType}` + (isSelected ? ' selected' : '');
+                    actionDiv.textContent = label;
+
+                    // Click handler to select this action path
+                    actionDiv.addEventListener('click', () => {
+                        const newPath = [...pathSoFar, action].join('-');
+                        document.getElementById('preflopScenarioFilter').value = newPath;
+                        renderPreflopGrid(currentData);
+                        renderActionTree(currentData, newPath);
+                    });
+
+                    nodeDiv.appendChild(actionDiv);
+                });
+
+                container.appendChild(nodeDiv);
+
+                // If there's a selected action and it has children, continue
+                if (selectedAction && node.children[selectedAction]) {
+                    // Add arrow
+                    const arrow = document.createElement('div');
+                    arrow.className = 'action-tree-arrow';
+                    arrow.textContent = '→';
+                    container.appendChild(arrow);
+
+                    const nextPlayer = playerName === 'SB' ? 'BB' : 'SB';
+                    const nextRaiseCount = selectedAction.startsWith('R') ? rCount + 1 : rCount;
+                    const nextNode = node.children[selectedAction];
+                    const nextPath = [...pathSoFar, selectedAction];
+                    const nextSelectedIndex = nextPath.length < historyParts.length ? historyParts[nextPath.length] : null;
+
+                    // Find the selected action at the next level
+                    let nextSelected = null;
+                    if (nextPath.length < historyParts.length) {
+                        nextSelected = historyParts[nextPath.length];
+                    }
+
+                    // Only continue if there are more children to show
+                    if (Object.keys(nextNode.children).length > 0 || nextNode.isEnd) {
+                        addNode(nextNode, nextSelected, nextPath, nextPlayer, nextRaiseCount);
+                    }
+                }
+            }
+
+            // Start rendering from root
+            addNode(tree, historyParts[0] || null, [], 'SB', 0);
         }
 
         // Initialize UI for postflop format
@@ -1117,13 +1416,13 @@
             document.getElementById('metaIterations').textContent = parsed.metadata.iterations?.toLocaleString() || '-';
             document.getElementById('metaInfoSets').textContent = parsed.metadata.num_info_sets?.toLocaleString() || '-';
 
-            // Populate scenario filter
+            // Populate scenario filter with human-readable labels
             const scenarioFilter = document.getElementById('preflopScenarioFilter');
             scenarioFilter.innerHTML = '<option value="">RFI (Open)</option>';
             parsed.preflopScenarios.filter(s => s !== '').forEach(scenario => {
                 const opt = document.createElement('option');
                 opt.value = scenario;
-                opt.textContent = scenario || 'Open';
+                opt.textContent = formatPreflopScenario(scenario);
                 scenarioFilter.appendChild(opt);
             });
 
@@ -1132,7 +1431,10 @@
                 if (currentView === 'preflop-grid') renderPreflopGrid(currentData);
             });
             document.getElementById('preflopScenarioFilter').addEventListener('change', () => {
-                if (currentView === 'preflop-grid') renderPreflopGrid(currentData);
+                if (currentView === 'preflop-grid') {
+                    renderPreflopGrid(currentData);
+                    renderActionTree(currentData, document.getElementById('preflopScenarioFilter').value);
+                }
             });
 
             ['playerFilter', 'streetFilter', 'historySearch'].forEach(id => {
@@ -1148,6 +1450,9 @@
 
             // Start with preflop grid view
             switchView('preflop-grid');
+
+            // Initial render of action tree
+            renderActionTree(parsed, '');
         }
 
         // File handling
