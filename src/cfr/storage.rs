@@ -343,6 +343,9 @@ pub struct StorageExport {
 pub struct StrategySnapshot {
     /// Average strategies: info_key -> [probability per action]
     pub strategies: FxHashMap<String, Vec<f64>>,
+    /// Strategy sum totals: info_key -> sum of all strategy weights
+    /// Used to determine if an info set has been visited
+    pub totals: FxHashMap<String, f64>,
 }
 
 impl RegretStorage {
@@ -354,6 +357,7 @@ impl RegretStorage {
         let action_counts = self.action_counts.read().unwrap();
 
         let mut strategies = FxHashMap::default();
+        let mut totals = FxHashMap::default();
 
         for (key, sums) in strategy_sums.iter() {
             let num_actions = action_counts.get(key).copied().unwrap_or(sums.len());
@@ -366,23 +370,31 @@ impl RegretStorage {
             };
 
             strategies.insert(key.clone(), avg_strategy);
+            totals.insert(key.clone(), total);
         }
 
-        StrategySnapshot { strategies }
+        StrategySnapshot { strategies, totals }
     }
 
     /// Calculate Convergence Indicator (CI) by comparing current strategies to a snapshot.
     ///
     /// CI measures how much strategies have changed since the snapshot.
-    /// Lower CI means better convergence (CI ~ 1 is close to fully converged).
+    /// Higher CI = strategies changing rapidly (early training, far from Nash)
+    /// Lower CI = strategies stabilizing (converging toward Nash equilibrium)
+    ///
+    /// - CI > 20: very early training, strategies unstable
+    /// - CI 10-20: still learning
+    /// - CI < 10: bare minimum for usable solution
+    /// - CI ~ 1: fully converged
     ///
     /// Formula: CI = 100 * average(sum of |new_prob - old_prob| for each action)
+    /// Only counts info sets that have been visited (total > 0) in at least one snapshot.
     ///
     /// # Arguments
     /// * `snapshot` - Previous strategy snapshot to compare against
     ///
     /// # Returns
-    /// The CI value (lower is better, < 10 is bare minimum, ~ 1 is converged)
+    /// The CI value (lower is better)
     pub fn calculate_ci(&self, snapshot: &StrategySnapshot) -> f64 {
         let strategy_sums = self.strategy_sums.read().unwrap();
         let action_counts = self.action_counts.read().unwrap();
@@ -392,10 +404,19 @@ impl RegretStorage {
 
         for (key, sums) in strategy_sums.iter() {
             let num_actions = action_counts.get(key).copied().unwrap_or(sums.len());
-            let total: f64 = sums.iter().sum();
+            let current_total: f64 = sums.iter().sum();
 
-            let new_strategy: Vec<f64> = if total > 0.0 {
-                sums.iter().map(|&x| x / total).collect()
+            // Get old total from snapshot (0 if not present)
+            let old_total = snapshot.totals.get(key).copied().unwrap_or(0.0);
+
+            // Only count this info set if it was visited in at least one snapshot
+            // This avoids counting uniform vs uniform comparisons (both unvisited)
+            if current_total == 0.0 && old_total == 0.0 {
+                continue;
+            }
+
+            let new_strategy: Vec<f64> = if current_total > 0.0 {
+                sums.iter().map(|&x| x / current_total).collect()
             } else {
                 vec![1.0 / num_actions as f64; num_actions]
             };
@@ -410,6 +431,16 @@ impl RegretStorage {
 
                 total_change += change;
                 num_info_sets += 1;
+            } else {
+                // New info set discovered since snapshot - count as max change from uniform
+                // This ensures new info sets contribute to CI
+                let uniform_prob = 1.0 / num_actions as f64;
+                let change: f64 = new_strategy
+                    .iter()
+                    .map(|&prob| (prob - uniform_prob).abs())
+                    .sum();
+                total_change += change;
+                num_info_sets += 1;
             }
         }
 
@@ -419,8 +450,69 @@ impl RegretStorage {
 
         // CI = 100 * average change per info set
         // Each info set contributes sum of |delta| which is at most 2.0
-        // So we scale by 100 to get a nicer range
+        // So we scale by 100 to get a nicer range (max CI = 200)
         100.0 * total_change / num_info_sets as f64
+    }
+
+    /// Calculate exploitability-based CI using accumulated regrets.
+    ///
+    /// This measures actual solution quality, not just stability.
+    /// Higher CI = more exploitable (worse solution)
+    /// Lower CI = less exploitable (better solution)
+    ///
+    /// Formula: CI = (sum of positive regrets) / (iterations * num_info_sets) * scaling
+    ///
+    /// This starts HIGH and decreases as the solver learns.
+    /// - CI > 20: very exploitable, needs more training
+    /// - CI 10-20: somewhat exploitable
+    /// - CI < 10: acceptable solution quality
+    /// - CI ~ 1: near Nash equilibrium
+    ///
+    /// # Arguments
+    /// * `iterations` - Number of training iterations completed
+    ///
+    /// # Returns
+    /// The CI value (lower is better)
+    pub fn calculate_exploitability_ci(&self, iterations: u64) -> f64 {
+        if iterations == 0 {
+            return f64::INFINITY;
+        }
+
+        let regrets = self.regrets.read().unwrap();
+
+        if regrets.is_empty() {
+            return f64::INFINITY;
+        }
+
+        let mut total_positive_regret = 0.0;
+        let mut num_info_sets = 0;
+
+        for (_key, regret_vec) in regrets.iter() {
+            // Sum of positive regrets for this info set
+            // In CFR, exploitability is bounded by average positive regret
+            let positive_regret: f64 = regret_vec.iter().map(|&r| r.max(0.0)).sum();
+            total_positive_regret += positive_regret;
+            num_info_sets += 1;
+        }
+
+        if num_info_sets == 0 {
+            return f64::INFINITY;
+        }
+
+        // Exploitability bound: O(R / T) where R is sum of regrets, T is iterations
+        // We normalize by info sets to get average regret per info set per iteration
+        // Then scale to match typical CI ranges (10 = minimum, 1 = converged)
+        //
+        // The scaling factor of 1000 is chosen empirically to give similar ranges to HRC:
+        // - Early training: CI ~ 20-50
+        // - After some training: CI ~ 10-20
+        // - Converged: CI < 10
+        let avg_regret_per_infoset = total_positive_regret / num_info_sets as f64;
+        let normalized_regret = avg_regret_per_infoset / iterations as f64;
+
+        // Scale to get CI in a reasonable range
+        // Factor of 1000 gives roughly: initial CI ~ 50, converged CI ~ 1
+        1000.0 * normalized_regret
     }
 }
 

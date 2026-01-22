@@ -193,25 +193,20 @@ fn main() {
                     String::new()
                 };
 
-                // Format CI (show "warmup" if still infinity)
+                // Format CI (show "init" if still infinity during first snapshot)
                 let ci_str = if stats.ci.is_infinite() {
-                    "warmup".to_string()
+                    "  init".to_string()
                 } else {
                     format!("{:>6.2}", stats.ci)
                 };
 
-                // Calculate minimum iterations needed for convergence
-                let min_iters = (stats.info_sets as u64 * 10).max(10000);
-                let progress_pct = (stats.iteration as f64 / min_iters as f64 * 100.0).min(100.0);
-
                 println!(
-                    "Iteration {:>8} | CI: {} | Info sets: {:>8} | Speed: {:>6.0} it/s | Min: {:>8} ({:>5.1}%) | Elapsed: {}{}",
+                    "Iteration {:>8} | CI: {} | Target: {:>6.2} | Info sets: {:>8} | Speed: {:>6.0} it/s | Elapsed: {}{}",
                     stats.iteration,
                     ci_str,
+                    ci,
                     stats.info_sets,
                     stats.iterations_per_second,
-                    min_iters,
-                    progress_pct,
                     format_duration(stats.elapsed_seconds),
                     eta_str
                 );
