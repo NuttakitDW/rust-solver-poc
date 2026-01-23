@@ -1,0 +1,73 @@
+{
+  "stacks_and_blinds": {
+    "mode": "auto",
+    "players": [
+      {
+        "position": "SB",
+        "chips": 40000,
+        "stack_bb": 50.0
+      },
+      {
+        "position": "BB",
+        "chips": 40000,
+        "stack_bb": 50.0
+      }
+    ]
+  },
+  "blind_structure": {
+    "sb": 400,
+    "bb": 800,
+    "ante": 100,
+    "straddle": "off",
+    "skip_sb": false,
+    "moving_bu": false
+  },
+  "calculation_mode": {
+    "hand_mode": "monte_carlo_advanced",
+    "max_players": 8,
+    "equity_model": "chip_ev_bb",
+    "model_options": "regular_chip_ev_bb"
+  },
+  "betting_setup": {
+    "preset": "simple_basics",
+    "postflop": {
+      "mode": "off",
+      "description": "Postflop is checked down"
+    },
+    "preflop": {
+      "actions": {
+        "limps": {
+          "sizings": null,
+          "flats": 0
+        },
+        "open": {
+          "sizings": ["3.5bb"],
+          "flats": 0
+        },
+        "3bet": {
+          "sizings": ["4.0x", "3.0x"],
+          "flats": 0
+        },
+        "4bet": {
+          "sizings": ["2.5x"],
+          "flats": 0
+        },
+        "5bet": {
+          "sizings": ["all-in"],
+          "flats": 0
+        }
+      },
+      "all_in_threshold_pct": 40.0,
+      "add_sb_complete": true
+    }
+  },
+  "tree_statistics": {
+    "total_nodes": 12,
+    "total_tree_size_gb": 0.00
+  },
+  "abstractions": {
+    "flop": 1024,
+    "turn": 256,
+    "river": 256
+  }
+}

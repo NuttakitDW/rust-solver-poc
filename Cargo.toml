@@ -29,6 +29,14 @@ criterion = "0.5"
 name = "solve_full"
 path = "src/bin/solve_full.rs"
 
+[[bin]]
+name = "solve_8max"
+path = "src/bin/solve_8max.rs"
+
+[[bin]]
+name = "solve_ranges"
+path = "src/bin/solve_ranges.rs"
+
 [[bench]]
 name = "cfr_bench"
 harness = false

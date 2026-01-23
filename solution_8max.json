@@ -1,0 +1,150 @@
+{
+  "metadata": {
+    "config_name": "HRC 8-max 50bb Reference",
+    "stack_bb": 50.0,
+    "total_time_secs": 1.092815125,
+    "timestamp": "1769093115"
+  },
+  "spots": [
+    {
+      "rfi_position": "UTG",
+      "defender_position": "EP",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "UTG",
+      "defender_position": "MP",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "UTG",
+      "defender_position": "HJ",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "UTG",
+      "defender_position": "CO",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "UTG",
+      "defender_position": "BU",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "UTG",
+      "defender_position": "SB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "UTG",
+      "defender_position": "BB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "EP",
+      "defender_position": "MP",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "EP",
+      "defender_position": "HJ",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "EP",
+      "defender_position": "CO",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "EP",
+      "defender_position": "BU",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "EP",
+      "defender_position": "SB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "EP",
+      "defender_position": "BB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "MP",
+      "defender_position": "HJ",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "MP",
+      "defender_position": "CO",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "MP",
+      "defender_position": "BU",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "MP",
+      "defender_position": "SB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "MP",
+      "defender_position": "BB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "HJ",
+      "defender_position": "CO",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "HJ",
+      "defender_position": "BU",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "HJ",
+      "defender_position": "SB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "HJ",
+      "defender_position": "BB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "CO",
+      "defender_position": "BU",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "CO",
+      "defender_position": "SB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "CO",
+      "defender_position": "BB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "BU",
+      "defender_position": "SB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "BU",
+      "defender_position": "BB",
+      "strategies": {}
+    },
+    {
+      "rfi_position": "SB",
+      "defender_position": "BB",
+      "strategies": {}
+    }
+  ]
+}

@@ -28,6 +28,5 @@
 
 pub mod kuhn;
 pub mod preflop;
-
-// Future modules:
-// pub mod pushfold;
+pub mod preflop_8max;
+pub mod preflop_ranges;

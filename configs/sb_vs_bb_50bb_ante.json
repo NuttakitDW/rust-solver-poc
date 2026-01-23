@@ -1,0 +1,37 @@
+{
+  "version": "1.0",
+  "name": "SB vs BB 50bb with Ante",
+  "description": "SB vs BB heads-up 50bb effective with 0.125bb ante, preflop only (postflop checked down)",
+  "stack_bb": 50.0,
+  "blinds": {
+    "bb": 1.0,
+    "sb": 0.5,
+    "ante": 0.125
+  },
+  "preflop": {
+    "sb_open": 3.5,
+    "bb_3bet_multiplier": 3.0,
+    "sb_4bet_multiplier": 2.5,
+    "add_allin_spr": 7.0
+  },
+  "postflop": {
+    "oop_bet_sizes": [],
+    "ip_bet_sizes": [],
+    "raise_sizes": [],
+    "add_allin_spr": 0.0,
+    "allow_donk": false,
+    "max_bets_per_street": 0
+  },
+  "abstraction": {
+    "flop_buckets": 1024,
+    "turn_buckets": 256,
+    "river_buckets": 256,
+    "equity_samples": 500
+  },
+  "solver": {
+    "iterations": 100000,
+    "threads": 0,
+    "use_cfr_plus": true,
+    "use_linear_cfr": true
+  }
+}
